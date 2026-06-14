@@ -1,0 +1,149 @@
+/* Minimal styling for the demo page and the default inline-agent markup
+   (the .karta-* classes the module renders). Your real site brings its own
+   design; override renderUser / createReply to emit your own classes. */
+
+:root {
+  --bg: #fbfbf9;
+  --ink: #1a1a17;
+  --muted: #6b6b63;
+  --line: #e6e6df;
+  --accent: #c6f135; /* Karta citron */
+  --user: #1a1a17;
+  --radius: 14px;
+  --font: "Hanken Grotesk", ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  line-height: 1.5;
+}
+
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 48px 20px 140px;
+}
+
+.page-head h1 {
+  font-size: 2rem;
+  margin: 0 0 8px;
+  letter-spacing: -0.01em;
+}
+.page-head .sub {
+  color: var(--muted);
+  margin: 0 0 28px;
+  max-width: 56ch;
+}
+
+.transcript {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.karta-turn { display: flex; flex-direction: column; gap: 6px; }
+.karta-turn--user { align-items: flex-end; }
+
+.karta-msg {
+  max-width: 90%;
+  padding: 12px 15px;
+  border-radius: var(--radius);
+}
+.karta-msg--user {
+  background: var(--user);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+.karta-msg--agent {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-bottom-left-radius: 4px;
+  white-space: pre-wrap; /* preserve agent line breaks in text-only mode */
+}
+.karta-msg--agent.is-error {
+  border-color: #e7b3b3;
+  background: #fdf3f3;
+  color: #9b2c2c;
+}
+.karta-name {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.karta-msg code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+  background: #f1f1ea;
+  padding: 1px 5px;
+  border-radius: 5px;
+}
+.karta-escalate {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #9b2c2c;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 22px 0 14px;
+}
+.chip {
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 999px;
+  padding: 7px 14px;
+  font: inherit;
+  font-size: 0.88rem;
+  color: var(--ink);
+  cursor: pointer;
+}
+.chip:hover { border-color: var(--ink); }
+
+.composer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 10px;
+  padding: 14px 20px 22px;
+  background: linear-gradient(to top, var(--bg) 70%, transparent);
+}
+.composer > * { max-width: 720px; }
+.composer textarea {
+  flex: 1;
+  resize: none;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font: inherit;
+  background: #fff;
+}
+.composer textarea:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.composer button {
+  border: none;
+  border-radius: 12px;
+  padding: 0 20px;
+  font: inherit;
+  font-weight: 600;
+  background: var(--ink);
+  color: #fff;
+  cursor: pointer;
+}
+.composer button:disabled { opacity: 0.5; cursor: default; }
+
+/* Center the fixed composer's children within the page width. */
+.composer { justify-content: center; }
+.composer textarea { width: 100%; }

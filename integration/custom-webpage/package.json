@@ -1,0 +1,14 @@
+{
+  "name": "karta-example-custom-webpage",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Bind a Karta-hosted agent to your own page's textbox and content area (bring-your-own-DOM).",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "jsdom": "^25.0.1",
+    "vitest": "^2.1.8"
+  }
+}

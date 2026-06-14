@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Inline agent — custom webpage example</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <header class="page-head">
+        <h1>Ask Karta</h1>
+        <p class="sub">
+          A Karta-hosted agent answering inside this page's own chat — no widget,
+          no iframe. The page owns the textbox and the transcript below; the agent
+          just streams into them. This is the same pattern karta.sh runs on its
+          home page.
+        </p>
+      </header>
+
+      <!-- The content area the agent streams into. It starts with one seeded
+           exchange to show that live replies sit in the same transcript. -->
+      <section id="transcript" class="transcript" role="log" aria-live="polite" aria-label="Conversation">
+        <div class="karta-turn karta-turn--user">
+          <div class="karta-msg karta-msg--user">What is Karta?</div>
+        </div>
+        <div class="karta-turn karta-turn--agent">
+          <div class="karta-name">Kriya</div>
+          <div class="karta-msg karta-msg--agent">
+            Karta runs your agents in production. You build an agent in a harness
+            like Claude Code, and a <code>git push</code> ships it as an isolated,
+            streaming agent behind a stable URL. Ask me anything about it below.
+          </div>
+        </div>
+      </section>
+
+      <!-- Suggested prompts. Each submits to the agent as if typed. -->
+      <div class="chips" id="chips" aria-label="Suggested questions">
+        <button type="button" class="chip" data-prompt="How do I deploy an agent?">How do I deploy?</button>
+        <button type="button" class="chip" data-prompt="Is Karta secure?">Is it secure?</button>
+        <button type="button" class="chip" data-prompt="What can I build on Karta?">What can I build?</button>
+      </div>
+
+      <!-- The page's own composer. The module binds to #input / #send. -->
+      <form class="composer" id="composer">
+        <textarea id="input" rows="1" placeholder="Ask anything about Karta…" autocomplete="off"></textarea>
+        <button id="send" type="submit" aria-label="Send">Send</button>
+      </form>
+    </main>
+
+    <script type="module">
+      import { mountInlineAgent } from "./src/mount-inline-agent.js";
+
+      // Load ./config.js if present (gitignored, holds your project ref + key);
+      // otherwise fall back to the committed example config so the page still
+      // loads on a fresh clone. With the placeholder key, sending shows a
+      // graceful error until you add a real origin-gated pk_live_ key.
+      let config;
+      try {
+        config = (await import("./config.js")).default;
+      } catch {
+        config = (await import("./config.example.js")).default;
+      }
+
+      const agent = mountInlineAgent({
+        input: "#input",
+        output: "#transcript",
+        submit: "#send",
+        agentName: "Kriya",
+        projectRef: config.projectRef,
+        baseUrl: config.baseUrl,
+        embedKey: config.embedKey,
+        escalateHref: config.escalateHref || "mailto:support@karta.sh",
+      });
+
+      // Chips send their prompt as a real turn.
+      document.querySelectorAll("#chips .chip").forEach((chip) => {
+        chip.addEventListener("click", () => agent.send(chip.dataset.prompt));
+      });
+    </script>
+  </body>
+</html>
