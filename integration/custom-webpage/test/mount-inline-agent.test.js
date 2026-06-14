@@ -86,6 +86,26 @@ describe("mountInlineAgent", () => {
     expect(reply.classList.contains("is-error")).toBe(false);
   });
 
+  it("renders agent markdown safely (links clickable, raw HTML escaped)", async () => {
+    const { els, agent } = mountWith([
+      { type: "message", text: "See the [docs](https://docs.karta.sh) and `git push`. <b>x</b>" },
+      { type: "done" },
+    ]);
+
+    await agent.send("how?");
+
+    const reply = els.output.querySelector(".karta-msg--agent");
+    const link = reply.querySelector("a");
+    expect(link).not.toBeNull();
+    expect(link.getAttribute("href")).toBe("https://docs.karta.sh");
+    expect(link.getAttribute("rel")).toBe("noopener noreferrer");
+    expect(link.textContent).toBe("docs");
+    expect(reply.querySelector("code")?.textContent).toBe("git push");
+    // The raw <b> tag is escaped to inert text, not a live element.
+    expect(reply.querySelector("b")).toBeNull();
+    expect(reply.textContent).toContain("<b>x</b>");
+  });
+
   it("ignores thinking and tool events (text-only surface)", async () => {
     const { els, agent } = mountWith([
       { type: "thinking", text: "let me think" },

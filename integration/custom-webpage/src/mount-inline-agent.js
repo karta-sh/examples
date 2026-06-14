@@ -15,13 +15,20 @@
 //
 // Rendering is text-only by design: a front-door chat shows the agent's words,
 // not its tool calls or reasoning. Agent text uses REPLACE semantics — each
-// `message` event carries the full text-so-far, so we replace the reply
-// element's text rather than append. Agent output is written with
-// `textContent` only (never innerHTML), so a reply can never inject markup
-// into your page.
+// `message` event carries the full text-so-far, so we replace the reply rather
+// than append. Agent text is rendered through renderMarkdown — a vendored,
+// escape-first renderer (the XSS boundary: it HTML-escapes the whole string,
+// then injects only a safe tag whitelist; links are scheme-allowlisted to
+// http/https/mailto) — so a reply can show clickable links and emphasis without
+// being able to inject markup into your page.
 // ---------------------------------------------------------------------------
 
 import { KartaAgentClient } from "./karta-agent-client.js";
+import { renderMarkdown } from "./karta-markdown.js";
+
+// Re-exported so a host supplying its own `createReply` can render agent text
+// the same safe way.
+export { renderMarkdown };
 
 /**
  * @typedef {Object} InlineAgentOptions
@@ -207,7 +214,7 @@ function defaultCreateReply(outputEl, agentName) {
     element: body,
     setText(t) {
       body.classList.remove("is-error");
-      body.textContent = t; // REPLACE; safe
+      body.innerHTML = renderMarkdown(t); // REPLACE; renderMarkdown is the XSS boundary
       scrollToEnd(outputEl);
     },
     setError(msg) {
