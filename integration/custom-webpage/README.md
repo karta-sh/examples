@@ -27,7 +27,7 @@ const agent = mountInlineAgent({
   input: "#input",            // your textbox (element or selector)
   output: "#transcript",      // your content area
   submit: "#send",            // optional; Enter and form-submit also send
-  projectRef: "org-8z06atvr/kriya",
+  projectRef: "org-8z06atvr/karta",
   baseUrl: "https://agent.karta.sh",
   embedKey: "pk_live_…",      // publishable, origin-gated — safe in page source
   escalateHref: "mailto:support@karta.sh",
@@ -57,7 +57,7 @@ npx serve .         # or: python3 -m http.server 8080
 ```
 
 Out of the box it points at Karta's own support agent (the live
-`org-8z06atvr/kriya` project). To make live replies work you need an origin-gated
+`org-8z06atvr/karta` project). To make live replies work you need an origin-gated
 `pk_live_` key that allowlists your local origin:
 
 ```bash

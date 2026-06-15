@@ -35,7 +35,7 @@ export { renderMarkdown };
  * @property {Element|string} input      Your text input (textarea/input) or a selector for it.
  * @property {Element|string} output     Your content/transcript area or a selector for it.
  * @property {Element|string} [submit]   Optional send button. Form-submit and Enter also send.
- * @property {string} [projectRef]       "{org}/{project}", e.g. "org-8z06atvr/kriya".
+ * @property {string} [projectRef]       "{org}/{project}", e.g. "org-8z06atvr/karta".
  * @property {string} [baseUrl]          Agent endpoint origin, e.g. "https://agent.karta.sh".
  * @property {string} [embedKey]         Publishable pk_live_ embed key (origin-gated).
  * @property {string} [agentName]        Label shown on agent turns. Default "Agent".

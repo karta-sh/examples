@@ -7,7 +7,7 @@ is committed, readable, and intended to be.
 | | |
 | --- | --- |
 | **Role** | Karta's customer-support / front-door agent |
-| **Lives on** | `karta.sh` home page (and `agent.karta.sh/org-8z06atvr/kriya`) |
+| **Lives on** | `karta.sh` home page (and `agent.karta.sh/org-8z06atvr/karta`) |
 | **Behavior** | [`CLAUDE.md`](CLAUDE.md) (the Claude Code harness reads it) |
 | **Continuity** | [`homepage-conversation.md`](homepage-conversation.md) |
 
@@ -40,10 +40,9 @@ git push karta main # ships an immutable release
 ```
 
 The live deployment and its origin-gated, credit-capped `pk_live_` embed key are
-managed by the Karta team - the key allowlists `karta.sh` and `localhost` (see
-RFC 0020 EX-7). The project slug is currently `org-8z06atvr/kriya`; re-publishing
-this folder under a `karta` project (and a vanity org slug, RFC 0020 OQ6) is a
-follow-up.
+managed by the Karta team - the key allowlists `karta.sh`, `www.karta.sh`, and
+`localhost` (see RFC 0020 EX-7). It's published as `org-8z06atvr/karta`; a vanity
+org slug (RFC 0020 OQ6) is a possible follow-up.
 
 ## Run it locally
 
