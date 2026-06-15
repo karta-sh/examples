@@ -39,8 +39,10 @@ agent.send("How do I deploy an agent?");
 
 It renders **text only** (a front-door chat shows words, not tool calls), uses
 **REPLACE** semantics for streamed text (each `message` event is the full
-text-so-far), and writes agent output with `textContent` only — never `innerHTML`
-— so a reply can't inject markup into your page.
+text-so-far), and renders agent text through the widget's escape-first
+`renderMarkdown` (HTML-escaped first, then only a safe tag whitelist; links are
+scheme-allowlisted) - so doc links render clickable without a reply being able to
+inject markup into your page.
 
 ## Run the demo
 
@@ -54,9 +56,9 @@ npx serve .         # or: python3 -m http.server 8080
 # open the printed http://localhost:… URL
 ```
 
-Out of the box it points at **kriya**, Karta's own support agent. To make live
-replies work you need an origin-gated `pk_live_` key that allowlists your local
-origin:
+Out of the box it points at Karta's own support agent (the live
+`org-8z06atvr/kriya` project). To make live replies work you need an origin-gated
+`pk_live_` key that allowlists your local origin:
 
 ```bash
 cp config.example.js config.js   # config.js is gitignored

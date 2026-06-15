@@ -1,6 +1,6 @@
-"""Kriya - Karta's support agent (a Karta harness app).
+"""Karta - Karta's support agent (a Karta harness app).
 
-Kriya's behavior lives in CLAUDE.md (the Claude Code harness reads it); the
+Karta's behavior lives in CLAUDE.md (the Claude Code harness reads it); the
 home-page intro it continues from is in homepage-conversation.md. This module
 just exposes a Karta instance that `karta dev` and the production runtime serve.
 """

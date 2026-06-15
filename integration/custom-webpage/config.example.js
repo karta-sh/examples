@@ -10,8 +10,9 @@
 // runs). See the README.
 
 export default {
-  // Karta's own support agent (kriya). Replace with your own project to point
-  // the page at your agent.
+  // Karta's own support agent. Replace with your own project to point the page
+  // at your agent. (The live project slug is `kriya`; it becomes `karta` once
+  // the agent is re-published under that name.)
   projectRef: "org-8z06atvr/kriya",
   baseUrl: "https://agent.karta.sh",
 
