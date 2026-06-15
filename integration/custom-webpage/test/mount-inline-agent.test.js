@@ -266,6 +266,32 @@ describe("mountInlineAgent", () => {
     expect(els.output.querySelector(".karta-msg--user")).toBeNull();
   });
 
+  it("forwards identity and contextFn into the client config", async () => {
+    // RFC 0023 P1+P2: a signed-in host hands the module a verified identity and
+    // a per-turn contextFn; the module must thread both into the client it
+    // builds (the client envelopes context and upgrades the token's `sub`).
+    dom();
+    let captured = null;
+    const identity = { userId: "42", identityToken: "deadbeef" };
+    const contextFn = () => "orgs: acme";
+    mountInlineAgent({
+      input: "#in",
+      output: "#out",
+      projectRef: "org/agent",
+      identity,
+      contextFn,
+      createClient: (cfg) => {
+        captured = cfg;
+        return fakeClient([{ type: "done" }]);
+      },
+    });
+
+    expect(captured.identity).toBe(identity);
+    expect(captured.contextFn).toBe(contextFn);
+    // Anonymous fields are still passed through untouched.
+    expect(captured.projectRef).toBe("org/agent");
+  });
+
   it("destroy() detaches listeners and shuts the client down", async () => {
     const { els, client, agent } = mountWith([{ type: "done" }]);
     agent.destroy();

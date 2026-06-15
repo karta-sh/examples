@@ -40,6 +40,8 @@ export { renderMarkdown };
  * @property {string} [embedKey]         Publishable pk_live_ embed key (origin-gated).
  * @property {string} [agentName]        Label shown on agent turns. Default "Agent".
  * @property {string} [escalateHref]     "Talk to a human" target (mailto:/url), shown on error.
+ * @property {{userId?:string, identityToken?:string, attributes?:object}} [identity]  Verified end-user identity (host-vouched HMAC); upgrades the session token's `sub`.
+ * @property {() => (string|Promise<string>)} [contextFn]  Per-turn context the client wraps in <session-context> on the wire.
  * @property {(text:string, output:Element) => void} [renderUser]   Override the user-bubble markup.
  * @property {(output:Element, agentName:string) => ReplyHandle} [createReply]  Override the reply markup.
  * @property {(cfg:object) => AgentClient} [createClient]  Inject a client (tests/advanced auth).
@@ -73,6 +75,12 @@ export function mountInlineAgent(options) {
     baseUrl: options.baseUrl,
     projectRef: options.projectRef,
     embedKey: options.embedKey,
+    // Verified identity (host-vouched) and per-turn context. Both are optional;
+    // an anonymous page omits them and behaves exactly as before. The client
+    // wraps context in a <session-context> envelope on the wire (the agent is
+    // told everything inside is DATA), so account data is never an instruction.
+    identity: options.identity,
+    contextFn: options.contextFn,
   });
 
   // Rendering is injectable. The standalone example uses the defaults below; a
