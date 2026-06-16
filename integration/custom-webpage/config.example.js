@@ -11,9 +11,8 @@
 
 export default {
   // Karta's own support agent. Replace with your own project to point the page
-  // at your agent. (The live project slug is `kriya`; it becomes `karta` once
-  // the agent is re-published under that name.)
-  projectRef: "org-8z06atvr/kriya",
+  // at your agent.
+  projectRef: "org-8z06atvr/karta",
   baseUrl: "https://agent.karta.sh",
 
   // Placeholder — replace with a real origin-gated pk_live_ key that allowlists
