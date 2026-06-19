@@ -49,7 +49,7 @@ function mountWith(events, extra = {}) {
     input: "#in",
     output: "#out",
     submit: "#go",
-    projectRef: "org/agent",
+    agentRef: "org/agent",
     baseUrl: "https://agent.example",
     embedKey: "pk_live_test",
     createClient: () => client,
@@ -277,7 +277,7 @@ describe("mountInlineAgent", () => {
     mountInlineAgent({
       input: "#in",
       output: "#out",
-      projectRef: "org/agent",
+      agentRef: "org/agent",
       identity,
       contextFn,
       createClient: (cfg) => {
@@ -289,7 +289,7 @@ describe("mountInlineAgent", () => {
     expect(captured.identity).toBe(identity);
     expect(captured.contextFn).toBe(contextFn);
     // Anonymous fields are still passed through untouched.
-    expect(captured.projectRef).toBe("org/agent");
+    expect(captured.agentRef).toBe("org/agent");
   });
 
   it("destroy() detaches listeners and shuts the client down", async () => {
