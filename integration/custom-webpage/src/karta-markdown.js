@@ -1,8 +1,7 @@
-// Vendored from @karta/widget — renderMarkdown/escapeHtml (the XSS boundary:
-// HTML-escape first, then inject only a strict whitelist of safe tags; links
-// are scheme-allowlisted to http/https/mailto). Source: sdks/widget/src/markdown.ts
-// @ karta monorepo 169ef7c (@karta/widget@0.1.0). esbuild ESM, 2026-06-13. DO NOT EDIT.
-// src/markdown.ts
+// Vendored from @karta/widget — renderMarkdown/escapeHtml (the XSS boundary).
+// Source: sdks/widget/src/markdown.ts @ karta monorepo 0d16f9bc. esbuild ESM. DO NOT EDIT.
+
+// sdks/widget/src/markdown.ts
 function escapeHtml(input) {
   return input.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }

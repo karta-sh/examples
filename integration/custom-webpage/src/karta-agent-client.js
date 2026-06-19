@@ -1,8 +1,8 @@
 // Vendored from @karta/widget — KartaAgentClient (headless agent client).
-// Source: sdks/widget/src/client.ts @ karta monorepo 169ef7c (@karta/widget@0.1.0).
-// Bundled with esbuild (--format=esm --target=es2020) on 2026-06-13.
-// Browser-safe: uses only native fetch / ReadableStream / AbortController.
-// DO NOT EDIT BY HAND — re-vendor per the example README ("Updating the client").
+// Source: sdks/widget/src/client.ts @ karta monorepo 0d16f9bc.
+// Bundled with esbuild (--bundle --format=esm --target=es2020).
+// Browser-safe: native fetch / ReadableStream / AbortController.
+// DO NOT EDIT BY HAND — re-vendor per the example README ("Updating the vendored client").
 var __defProp = Object.defineProperty;
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
 var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
@@ -71,6 +71,32 @@ function errorForStatus(status, body, retryAfterSeconds = null) {
   }
   const msg = body && typeof body === "object" && "message" in body && body.message ? body.message : `Karta widget API error ${status}`;
   return new KartaWidgetError(String(msg), status, body);
+}
+
+// sdks/widget/src/transport/internal.ts
+async function safeJson(res) {
+  const text = await res.text();
+  if (text.length === 0) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+}
+function parseRetryAfter(header) {
+  if (!header) return null;
+  const n = Number(header);
+  return Number.isFinite(n) ? n : null;
+}
+function mapUsage(raw) {
+  if (!raw || typeof raw !== "object") return void 0;
+  const num = (v) => typeof v === "number" ? v : void 0;
+  return {
+    inputTokens: num(raw.input_tokens),
+    outputTokens: num(raw.output_tokens),
+    totalTokens: num(raw.total_tokens),
+    raw
+  };
 }
 
 // sdks/widget/src/auth.ts
@@ -220,21 +246,16 @@ function base64UrlDecode(input) {
   if (typeof atob !== "function") return "";
   return atob(normalized);
 }
-function parseRetryAfter(header) {
-  if (!header) return null;
-  const n = Number(header);
-  return Number.isFinite(n) ? n : null;
-}
 
-// sdks/widget/src/projectRef.ts
+// sdks/widget/src/agentRef.ts
 var SLUG = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
-function parseProjectRef(ref) {
+function parseAgentRef(ref) {
   const parts = ref.split("/");
   if (parts.length === 2 && SLUG.test(parts[0]) && SLUG.test(parts[1])) {
-    return { org: parts[0], project: parts[1] };
+    return { org: parts[0], agent: parts[1] };
   }
   throw new KartaWidgetError(
-    `Invalid project ref ${JSON.stringify(ref)} \u2014 expected the combined "org/project" pair (two lowercase slug segments separated by one "/"), e.g. "coffeeco/support-bot".`,
+    `Invalid agent ref ${JSON.stringify(ref)} \u2014 expected the combined "org/agent" pair (two lowercase slug segments separated by one "/"), e.g. "coffeeco/support-bot".`,
     0,
     null
   );
@@ -311,8 +332,8 @@ var ManagedAgentsTransport = class {
     __publicField(this, "lastSeq", 0);
   }
   base() {
-    const { org, project } = parseProjectRef(this.opts.projectRef);
-    return `${this.opts.baseUrl}/${org}/${project}/v1/managed-agents/sessions`;
+    const { org, agent } = parseAgentRef(this.opts.agentRef);
+    return `${this.opts.baseUrl}/${org}/${agent}/v1/managed-agents/sessions`;
   }
   async createSession(metadata) {
     const body = await this.authedJson(this.base(), {
@@ -333,11 +354,15 @@ var ManagedAgentsTransport = class {
   async postUserMessage(sessionId, text) {
     await this.postEvent(sessionId, { type: "user.message", text });
   }
-  async confirmTool(sessionId, requestId, allow) {
+  // RFC 0030 — `decision` is the harness's own option id (approve_once /
+  // approve_session / deny), relayed verbatim; the data plane maps it to the
+  // harness decision (and persists approve_session). Older callers' boolean is
+  // gone, but the data plane still accepts "allow" as a back-compat alias.
+  async confirmTool(sessionId, requestId, decision) {
     await this.postEvent(sessionId, {
       type: "user.tool_confirmation",
       request_id: requestId,
-      result: allow ? "allow" : "deny"
+      result: decision
     });
   }
   async interrupt(sessionId) {
@@ -489,7 +514,7 @@ var ManagedAgentsTransport = class {
       }
       if (!res.ok) {
         const errBody = readBody ? await readBody(res) : await safeJson(res);
-        const retryAfter = parseRetryAfter2(res.headers.get("retry-after"));
+        const retryAfter = parseRetryAfter(res.headers.get("retry-after"));
         throw errorForStatus(res.status, errBody, retryAfter);
       }
       return readBody ? readBody(res) : res;
@@ -523,6 +548,7 @@ function mapWireEvent(wire) {
           type: "input_required",
           requestId: wire.request_id ?? "",
           tool: wire.tool,
+          target: wire.target,
           options: wire.options,
           seq
         };
@@ -534,30 +560,6 @@ function mapWireEvent(wire) {
     default:
       return null;
   }
-}
-function mapUsage(raw) {
-  if (!raw || typeof raw !== "object") return void 0;
-  const num = (v) => typeof v === "number" ? v : void 0;
-  return {
-    inputTokens: num(raw.input_tokens),
-    outputTokens: num(raw.output_tokens),
-    totalTokens: num(raw.total_tokens),
-    raw
-  };
-}
-async function safeJson(res) {
-  const text = await res.text();
-  if (text.length === 0) return null;
-  try {
-    return JSON.parse(text);
-  } catch {
-    return text;
-  }
-}
-function parseRetryAfter2(header) {
-  if (!header) return null;
-  const n = Number(header);
-  return Number.isFinite(n) ? n : null;
 }
 
 // sdks/widget/src/transport/responses.ts
@@ -575,8 +577,8 @@ var ResponsesTransport = class {
   // Run a turn: POST the input with stream:true, then normalize the SSE
   // into AgentEvents (accumulated message text, then done/error).
   async *sendMessage(text, signal) {
-    const { org, project } = parseProjectRef(this.opts.projectRef);
-    const url = `${this.opts.baseUrl}/${org}/${project}/v1/responses`;
+    const { org, agent } = parseAgentRef(this.opts.agentRef);
+    const url = `${this.opts.baseUrl}/${org}/${agent}/v1/responses`;
     const body = { input: text, stream: true, store: true };
     if (this.previousResponseId) body.previous_response_id = this.previousResponseId;
     if (this.opts.model) body.model = this.opts.model;
@@ -594,7 +596,7 @@ var ResponsesTransport = class {
         case "response.completed": {
           const id = wire.response?.id;
           if (typeof id === "string") this.previousResponseId = id;
-          yield { type: "done", usage: mapUsage2(wire.response?.usage) };
+          yield { type: "done", usage: mapUsage(wire.response?.usage) };
           return;
         }
         case "response.failed": {
@@ -632,7 +634,7 @@ var ResponsesTransport = class {
         continue;
       }
       if (!res.ok) {
-        const errBody = await safeJson2(res);
+        const errBody = await safeJson(res);
         throw errorForStatus(res.status, errBody);
       }
       return res;
@@ -640,31 +642,12 @@ var ResponsesTransport = class {
     throw new KartaWidgetNetworkError("Responses request failed after token refresh");
   }
 };
-function mapUsage2(raw) {
-  if (!raw || typeof raw !== "object") return void 0;
-  const num = (v) => typeof v === "number" ? v : void 0;
-  return {
-    inputTokens: num(raw.input_tokens),
-    outputTokens: num(raw.output_tokens),
-    totalTokens: num(raw.total_tokens),
-    raw
-  };
-}
-async function safeJson2(res) {
-  const text = await res.text();
-  if (text.length === 0) return null;
-  try {
-    return JSON.parse(text);
-  } catch {
-    return text;
-  }
-}
 
 // sdks/widget/src/client.ts
 var KartaAgentClient = class {
   constructor(opts) {
     __publicField(this, "baseUrl");
-    __publicField(this, "projectRef");
+    __publicField(this, "agentRef");
     __publicField(this, "transportKind");
     __publicField(this, "tokens");
     __publicField(this, "ma");
@@ -678,12 +661,12 @@ var KartaAgentClient = class {
     __publicField(this, "controller", new AbortController());
     __publicField(this, "closed", false);
     if (!opts.baseUrl) throw new KartaWidgetError("KartaAgentClient: `baseUrl` is required.", 0, null);
-    if (!opts.projectRef) {
-      throw new KartaWidgetError("KartaAgentClient: `projectRef` is required.", 0, null);
+    if (!opts.agentRef) {
+      throw new KartaWidgetError("KartaAgentClient: `agentRef` is required.", 0, null);
     }
-    parseProjectRef(opts.projectRef);
+    parseAgentRef(opts.agentRef);
     this.baseUrl = opts.baseUrl.replace(/\/+$/, "");
-    this.projectRef = opts.projectRef;
+    this.agentRef = opts.agentRef;
     this.transportKind = opts.transport ?? "managed-agents";
     this.identity = opts.identity ? { ...opts.identity } : {};
     this.contextFn = opts.contextFn;
@@ -699,7 +682,7 @@ var KartaAgentClient = class {
     });
     const shared = {
       baseUrl: this.baseUrl,
-      projectRef: this.projectRef,
+      agentRef: this.agentRef,
       tokens: this.tokens,
       fetch: fetchImpl
     };
@@ -747,9 +730,21 @@ var KartaAgentClient = class {
     if (!this._sessionId) {
       await this.createSession();
     }
-    const sid = this._sessionId;
-    const fromSeq = ma.lastSeq;
-    await ma.postUserMessage(sid, outgoing);
+    let sid = this._sessionId;
+    let fromSeq = ma.lastSeq;
+    try {
+      await ma.postUserMessage(sid, outgoing);
+    } catch (err) {
+      if (err instanceof KartaWidgetError && err.status === 404) {
+        this._sessionId = null;
+        await this.createSession();
+        sid = this._sessionId;
+        fromSeq = ma.lastSeq;
+        await ma.postUserMessage(sid, outgoing);
+      } else {
+        throw err;
+      }
+    }
     yield* ma.streamTurn(sid, fromSeq, signal);
   }
   // The RFC 0012 buffer extension: wrap the outgoing wire text with the
@@ -854,8 +849,10 @@ ${text}`;
   }
   // Respond to an `input_required` pause. The server resolves the pending
   // tool and continues the turn on the same session; a caller should
-  // stream() afterward to read the continuation.
-  async confirmTool(requestId, allow) {
+  // stream() afterward to read the continuation. `decision` is the harness
+  // option id from the event's `options` (approve_once / approve_session /
+  // deny), relayed verbatim — the harness owns persistence (RFC 0030).
+  async confirmTool(requestId, decision) {
     this.assertOpen();
     if (!this.ma) {
       throw new KartaWidgetError(
@@ -867,7 +864,7 @@ ${text}`;
     if (!this._sessionId) {
       throw new KartaWidgetError("confirmTool(): no active session.", 0, null);
     }
-    await this.ma.confirmTool(this._sessionId, requestId, allow);
+    await this.ma.confirmTool(this._sessionId, requestId, decision);
   }
   // Ask the server to stop the current turn (Managed Agents). The Responses
   // transport has no server-side interrupt; abort the stream instead.

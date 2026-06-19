@@ -27,7 +27,7 @@ const agent = mountInlineAgent({
   input: "#input",            // your textbox (element or selector)
   output: "#transcript",      // your content area
   submit: "#send",            // optional; Enter and form-submit also send
-  projectRef: "org-8z06atvr/karta",
+  agentRef: "org-8z06atvr/karta",
   baseUrl: "https://agent.karta.sh",
   embedKey: "pk_live_…",      // publishable, origin-gated — safe in page source
   escalateHref: "mailto:support@karta.sh",
@@ -98,7 +98,7 @@ module script. This is exactly how karta.sh does it (a Rails app, importmap-free
   mountInlineAgent({
     input: "#input",
     output: "#thread",
-    projectRef: "<%= @agent[:project_ref] %>",
+    agentRef: "<%= @agent[:agent_ref] %>",
     baseUrl: "<%= @agent[:base_url] %>",
     embedKey: "<%= @agent[:embed_key] %>",
     // Match your page's markup so live replies look native:

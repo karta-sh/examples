@@ -5,14 +5,14 @@
 // carries a hard credit cap, so a copied key can't run up spend. It is NOT a
 // secret — do not confuse it with a server-side API key.
 //
-// To run against your own agent, set projectRef to "{org}/{project}" and paste
+// To run against your own agent, set agentRef to "{org}/{agent}" and paste
 // your project's origin-gated embed key (allowlist http://localhost for local
 // runs). See the README.
 
 export default {
   // Karta's own support agent. Replace with your own project to point the page
   // at your agent.
-  projectRef: "org-8z06atvr/karta",
+  agentRef: "org-8z06atvr/karta",
   baseUrl: "https://agent.karta.sh",
 
   // Placeholder — replace with a real origin-gated pk_live_ key that allowlists

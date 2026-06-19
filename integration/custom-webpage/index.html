@@ -51,7 +51,7 @@
     <script type="module">
       import { mountInlineAgent } from "./src/mount-inline-agent.js";
 
-      // Load ./config.js if present (gitignored, holds your project ref + key);
+      // Load ./config.js if present (gitignored, holds your agent ref + key);
       // otherwise fall back to the committed example config so the page still
       // loads on a fresh clone. With the placeholder key, sending shows a
       // graceful error until you add a real origin-gated pk_live_ key.
@@ -67,7 +67,7 @@
         output: "#transcript",
         submit: "#send",
         agentName: "Karta",
-        projectRef: config.projectRef,
+        agentRef: config.agentRef,
         baseUrl: config.baseUrl,
         embedKey: config.embedKey,
         escalateHref: config.escalateHref || "mailto:support@karta.sh",
