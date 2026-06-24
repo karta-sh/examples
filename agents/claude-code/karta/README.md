@@ -9,16 +9,15 @@ is committed, readable, and intended to be.
 | **Role** | Karta's customer-support / front-door agent |
 | **Lives on** | `karta.sh` home page (and `agent.karta.sh/org-8z06atvr/karta`) |
 | **Behavior** | [`CLAUDE.md`](CLAUDE.md) (the Claude Code harness reads it) |
-| **Continuity** | [`homepage-conversation.md`](homepage-conversation.md) |
+| **Continuity** | the home-page intro, inlined in [`CLAUDE.md`](CLAUDE.md) |
 
 ## Files
 
-- **`CLAUDE.md`** - Karta's whole personality and rules. Treated as
+- **`CLAUDE.md`** - Karta's whole personality and rules, including the inlined
+  home-page intro the visitor reads before they type (Karta treats it as a
+  conversation it has already had and continues from there). It mirrors the
+  scripted turns on the karta.sh home page; keep the two in step. Treated as
   adversary-readable by design (no internal runbooks, endpoints, or secrets).
-- **`homepage-conversation.md`** - the scripted intro the visitor reads on the
-  home page before they type. Karta treats it as a conversation it has already
-  had with the visitor and continues from there. It mirrors the scripted turns in
-  the karta.sh home page; keep the two in step (watermark in the file).
 - **`app.py`** - a thin wrapper exposing a `Karta()` instance, identical in shape
   to the `support-bot-demo`. Behavior is in `CLAUDE.md`, not here.
 - **`karta.toml`** - the deploy manifest (`python` buildpack; see the note in the

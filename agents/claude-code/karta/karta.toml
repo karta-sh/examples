@@ -8,3 +8,5 @@
 # entirely in CLAUDE.md.
 entry_point = "app:app"
 buildpack = "python"
+name = "karta"
+deploy = true
