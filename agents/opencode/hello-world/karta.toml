@@ -26,7 +26,7 @@ deploy = true
 # need determinism (it must be one Karta supports - `karta deploy` checks).
 [harness]
 type = "opencode"
-version = "2"
+version = "1"
 
 # --- Environment (declare-or-bind, RFC 0013) ------------------------------
 # Names this agent needs. Bind locally in .env, in prod via `karta env set`.
