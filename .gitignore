@@ -5,3 +5,4 @@ dist/
 # Per-example local config (holds your project ref + embed key)
 **/config.js
 .DS_Store
+.serena
