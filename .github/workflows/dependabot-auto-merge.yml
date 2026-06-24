@@ -1,0 +1,88 @@
+name: Dependabot auto-merge
+
+# Auto-merges Dependabot PRs once the CI workflow passes, gated by an update-type
+# policy. This avoids GitHub's native auto-merge, which requires branch protection
+# (unavailable on this plan). It never checks out or executes PR code: it only reads
+# the head commit's metadata and merges via the API.
+#
+# Policy: merge patch bumps always; merge minor bumps only for >=1.0 packages;
+# hold majors and pre-1.0 minors for manual review. Grouped updates must have every
+# entry satisfy the policy or the whole PR is held.
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    # Only a green CI run for a Dependabot branch. We gate on the branch prefix
+    # (dependabot/*) rather than the run's actor so the check stays robust: only
+    # Dependabot opens dependabot/* branches, and the policy step below reads
+    # Dependabot's update-type metadata from the head commit.
+    if: >-
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      startsWith(github.event.workflow_run.head_branch, 'dependabot/')
+    steps:
+      - name: Evaluate policy and merge if eligible
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          set -euo pipefail
+
+          # Find the open PR whose current head is exactly the commit CI ran on.
+          # Matching headRefOid guards against merging a newer, un-tested push.
+          pr=$(gh pr list --repo "$REPO" --head "$HEAD_BRANCH" --state open \
+                 --json number,headRefOid \
+                 --jq "[.[] | select(.headRefOid == \"$HEAD_SHA\")][0].number // empty")
+          if [ -z "$pr" ]; then
+            echo "No open PR with head $HEAD_BRANCH@$HEAD_SHA (stale run or already merged). Skipping."
+            exit 0
+          fi
+          echo "Evaluating PR #$pr ($HEAD_BRANCH)"
+
+          # Read Dependabot's authoritative metadata from the head commit message.
+          msg=$(gh api "repos/$REPO/commits/$HEAD_SHA" --jq '.commit.message')
+
+          # Parallel arrays: each updated-dependencies entry emits one version then one type.
+          mapfile -t versions < <(printf '%s\n' "$msg" | grep -oE 'dependency-version: [0-9][^[:space:]]*' | awk '{print $2}' || true)
+          mapfile -t types    < <(printf '%s\n' "$msg" | grep -oE 'update-type: version-update:semver-[a-z]+' | sed 's/.*semver-//' || true)
+
+          if [ "${#types[@]}" -eq 0 ] || [ "${#types[@]}" -ne "${#versions[@]}" ]; then
+            echo "Could not parse update metadata reliably (grouped/unknown format). Holding for manual review."
+            exit 0
+          fi
+
+          # Policy: patch always; minor only for >=1.0; hold major and pre-1.0 minor.
+          eligible=true
+          for i in "${!types[@]}"; do
+            t="${types[$i]}"; v="${versions[$i]}"; major="${v%%.*}"
+            case "$t" in
+              patch)
+                echo "  - $v: patch -> allow" ;;
+              minor)
+                if [[ "$major" =~ ^[0-9]+$ ]] && [ "$major" -ge 1 ]; then
+                  echo "  - $v: minor (>=1.0) -> allow"
+                else
+                  echo "  - $v: pre-1.0 minor -> HOLD"; eligible=false
+                fi ;;
+              *)
+                echo "  - $v: $t -> HOLD"; eligible=false ;;
+            esac
+          done
+
+          if [ "$eligible" = true ]; then
+            echo "Policy satisfied -> squash-merging PR #$pr"
+            gh pr merge "$pr" --repo "$REPO" --squash
+          else
+            echo "PR #$pr held for manual review (does not meet auto-merge policy)."
+          fi

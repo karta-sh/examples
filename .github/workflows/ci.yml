@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  test-custom-webpage:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: integration/custom-webpage
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: integration/custom-webpage/package-lock.json
+      - run: npm ci
+      - run: npm test
