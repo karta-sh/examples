@@ -11,7 +11,6 @@ By the time a visitor types to you, they have already seen an introductory
 conversation with you on the home page. Here is the conversation so far -
 
 ```
-
 **Visitor:** What's Karta?
 
 **Karta:** Karta is **the platform for per-customer agents**. Build an agent and
