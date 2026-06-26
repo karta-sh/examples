@@ -28,6 +28,34 @@ function fakeClient(events) {
   };
 }
 
+// A fake client that models the session-resume surface (sessionId getter +
+// openSession) used for reload continuity. sendMessage lazily "creates" a
+// session (sets sessionId) like the real client does on the first turn.
+function fakeSessionClient({ transcript = [] } = {}) {
+  let sid = null;
+  return {
+    sent: [],
+    openedWith: null,
+    get sessionId() {
+      return sid;
+    },
+    async openSession(id) {
+      this.openedWith = id;
+      sid = id; // adopt the restored session
+      return transcript;
+    },
+    sendMessage(text) {
+      this.sent.push(text);
+      if (!sid) sid = "sess-new"; // first turn opens a session server-side
+      return (async function* () {
+        yield { type: "message", text: "ok" };
+        yield { type: "done" };
+      })();
+    },
+    shutdown() {},
+  };
+}
+
 function dom() {
   document.body.innerHTML = `
     <div id="out"></div>
@@ -64,6 +92,12 @@ beforeEach(() => {
   // call, but stub it to a no-op so the test log stays clean. Real browsers
   // implement it.
   window.scrollTo = () => {};
+  // Reload-continuity tests use the (jsdom-provided) sessionStorage; start clean.
+  try {
+    window.sessionStorage.clear();
+  } catch (_) {
+    /* jsdom always provides it; ignore if a runner doesn't */
+  }
 });
 
 describe("mountInlineAgent", () => {
@@ -361,6 +395,67 @@ describe("mountInlineAgent", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("resumes a persisted session and replays its transcript on mount", async () => {
+    // Reload continuity: a prior visit stored the session id. On a fresh mount the
+    // module must reopen that session and replay its transcript into the page, so
+    // the user sees the conversation they were having before the reload.
+    window.sessionStorage.setItem("kc.sid.42", "sess-123");
+    const els = dom();
+    const client = fakeSessionClient({
+      transcript: [
+        { id: "m1", role: "user", parts: [{ kind: "text", text: "what orgs do I have?" }] },
+        { id: "m2", role: "assistant", parts: [{ kind: "text", text: "You have **Acme**." }] },
+      ],
+    });
+
+    mountInlineAgent({
+      input: "#in",
+      output: "#out",
+      submit: "#go",
+      createClient: () => client,
+      persistSessionKey: "kc.sid.42",
+    });
+    // resumeIfPersisted() is fire-and-forget; let the replay flush.
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(client.openedWith).toBe("sess-123"); // adopted the stored session
+    const user = els.output.querySelector(".karta-turn--user .karta-msg--user");
+    const agent = els.output.querySelector(".karta-turn--agent .karta-msg--agent");
+    expect(user.textContent).toBe("what orgs do I have?");
+    // Assistant text is replayed through renderMarkdown (bold -> <strong>).
+    expect(agent.querySelector("strong")?.textContent).toBe("Acme");
+  });
+
+  it("persists the active session id under persistSessionKey after a turn", async () => {
+    dom();
+    const client = fakeSessionClient();
+    const agent = mountInlineAgent({
+      input: "#in",
+      output: "#out",
+      submit: "#go",
+      createClient: () => client,
+      persistSessionKey: "kc.sid.42",
+    });
+
+    expect(window.sessionStorage.getItem("kc.sid.42")).toBeNull(); // nothing yet
+    await agent.send("hi");
+    expect(client.sent).toEqual(["hi"]);
+    // The id the first turn opened is now remembered for the next reload.
+    expect(window.sessionStorage.getItem("kc.sid.42")).toBe("sess-new");
+  });
+
+  it("never touches storage when persistSessionKey is omitted", async () => {
+    dom();
+    const client = fakeSessionClient();
+    const agent = mountInlineAgent({
+      input: "#in",
+      output: "#out",
+      createClient: () => client,
+    });
+    await agent.send("hi");
+    expect(window.sessionStorage.length).toBe(0);
   });
 
   it("destroy() detaches listeners and shuts the client down", async () => {

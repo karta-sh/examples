@@ -45,6 +45,7 @@ export { renderMarkdown };
  * @property {(text:string, output:Element) => void} [renderUser]   Override the user-bubble markup.
  * @property {(output:Element, agentName:string) => ReplyHandle} [createReply]  Override the reply markup.
  * @property {(cfg:object) => AgentClient} [createClient]  Inject a client (tests/advanced auth).
+ * @property {string} [persistSessionKey]  sessionStorage key for per-visit reload continuity: the module remembers the active session id and, on a fresh load, reopens + replays its transcript before accepting new turns. Omitted -> the module never touches storage.
  */
 
 /**
@@ -89,6 +90,11 @@ export function mountInlineAgent(options) {
   // live replies look identical to the rest of the page.
   const renderUser = options.renderUser || defaultRenderUser;
   const createReply = options.createReply || defaultCreateReply;
+
+  // Optional reload-continuity: a sessionStorage key under which to remember the
+  // active session id, so a fresh page load can reopen + replay it (see
+  // resumeIfPersisted). Omitted -> the module never touches storage.
+  const persistKey = options.persistSessionKey || null;
 
   let busy = false;
   const teardown = [];
@@ -195,8 +201,56 @@ export function mountInlineAgent(options) {
       appendEscalation(reply);
     } finally {
       stopWarming();
+      persistSession();
       setBusy(false);
       if (typeof inputEl.focus === "function") inputEl.focus();
+    }
+  }
+
+  // Reload continuity. With persistSessionKey set, remember the active session id
+  // in sessionStorage (per browser tab/visit, so a new tab starts fresh) and, on a
+  // fresh load, reopen it and replay its transcript before accepting new turns. An
+  // SPA-style navigation that keeps the in-memory client never needs this.
+  function persistSession() {
+    if (!persistKey) return;
+    try {
+      const sid = client.sessionId;
+      if (sid) sessionStorage.setItem(persistKey, sid);
+    } catch (_) {
+      /* storage disabled (private mode / blocked) — degrade to no persistence */
+    }
+  }
+
+  async function resumeIfPersisted() {
+    if (!persistKey || typeof client.openSession !== "function") return;
+    let stored = null;
+    try {
+      stored = sessionStorage.getItem(persistKey);
+    } catch (_) {
+      return;
+    }
+    if (!stored) return;
+    try {
+      // openSession loads the compacted transcript AND adopts the session (cursor
+      // advanced to high-water), so the next sendMessage continues it.
+      const messages = await client.openSession(stored);
+      for (const m of messages || []) {
+        const text = (m.parts || [])
+          .filter((p) => p && p.kind === "text")
+          .map((p) => p.text || "")
+          .join("");
+        if (!text) continue;
+        if (m.role === "user") renderUser(text, outputEl);
+        else createReply(outputEl, agentName).setText(text);
+      }
+      persistSession();
+    } catch (_) {
+      // Expired / cross-user / missing session: drop it and start fresh.
+      try {
+        sessionStorage.removeItem(persistKey);
+      } catch (_) {
+        /* ignore */
+      }
     }
   }
 
@@ -211,6 +265,10 @@ export function mountInlineAgent(options) {
     a.textContent = "Talk to a human →";
     reply.element.appendChild(a);
   }
+
+  // Fire-and-forget: the mount returns synchronously; the transcript (if any)
+  // replays a tick later. No-op unless persistSessionKey + a stored id exist.
+  resumeIfPersisted();
 
   return {
     send,
