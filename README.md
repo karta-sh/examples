@@ -18,7 +18,8 @@ Scaffolding. Examples are landing incrementally per [RFC 0020](https://github.co
 | Ship your first agent in 60 seconds | `apps/claude-code/hello-world` | n/a |
 | Add chat to a site with one `<script>` tag, themed to match | `integration/themed-widget` | anonymous |
 | Build your own chat UI on the agent endpoint | `integration/headless-client` | anonymous / soft |
-| Give logged-in users durable per-user history and memory | `integration/authenticated-memory` | verified |
+| Stream an agent into your page's own textbox + content area | `integration/custom-webpage` | anonymous |
+| Give every logged-in user their own agent that knows it's *them* | `integration/authenticated-agent` | verified |
 
 ## Secrets
 

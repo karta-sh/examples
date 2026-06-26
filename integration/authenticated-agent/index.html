@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Your app — assistant</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <!-- Your publishable config. `cp config.example.js config.js` and fill it in.
+         The identity SECRET is never here — it lives only on the backend. -->
+    <script src="./config.js"></script>
+  </head>
+  <body>
+    <header class="appbar">
+      <div class="brand">YourApp</div>
+      <!-- Pretend this is your signed-in user, from your real auth. -->
+      <div class="user">Signed in as <b id="whoami">…</b></div>
+    </header>
+
+    <main class="chat">
+      <p class="hint">
+        This assistant knows it's <b id="whoami2">you</b> — verified, not guessed.
+        Ask it something, reload, and it still remembers you.
+      </p>
+      <!-- YOUR markup. The agent streams into #thread; #input + #send are yours. -->
+      <div id="thread" class="thread" aria-live="polite"></div>
+      <form id="composer" class="composer">
+        <textarea id="input" rows="1" placeholder="Message your assistant…" aria-label="Message"></textarea>
+        <button id="send" type="submit">Send</button>
+      </form>
+    </main>
+
+    <script type="module">
+      import { mountInlineAgent } from "./src/mount-inline-agent.js";
+
+      const cfg = window.KARTA_CONFIG;
+      if (!cfg) {
+        document.getElementById("thread").textContent =
+          "Missing config.js — copy config.example.js to config.js and fill it in.";
+      } else {
+        // 1) Ask YOUR backend who's signed in + a Karta identity token for them.
+        //    (Your backend authenticated them and holds the secret; the browser
+        //    never sees the secret, only this per-user token.)
+        const me = await fetch("/api/karta-identity").then((r) => r.json());
+        document.getElementById("whoami").textContent = me.name;
+        document.getElementById("whoami2").textContent = me.name;
+
+        // 2) Mount the agent with that VERIFIED identity. Karta re-checks the HMAC
+        //    at mint, so the agent's `sub` is trustworthy: per-user memory, and
+        //    answers scoped to this exact user.
+        mountInlineAgent({
+          input: "#input",
+          output: "#thread",
+          submit: "#send",
+          agentName: "Assistant",
+          agentRef: cfg.agentRef,
+          baseUrl: cfg.baseUrl,
+          embedKey: cfg.embedKey,
+          identity: { userId: me.userId, identityToken: me.identityToken },
+          // Optional per-turn context your page already knows. The client wraps
+          // it in <session-context> on the wire — data, never instructions.
+          contextFn: () => `The signed-in user is ${me.name} (id ${me.userId}).`,
+        });
+      }
+    </script>
+  </body>
+</html>

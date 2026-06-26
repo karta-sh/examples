@@ -1,0 +1,44 @@
+/* Minimal app shell + bring-your-own-DOM chat. The mount module styles nothing —
+   these classes (.karta-turn / .karta-msg / .karta-name / .karta-escalate) are
+   what it builds; dress them however your app likes. */
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: #16181d;
+  background: #f5f6f7;
+}
+.appbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.75rem 1.25rem; background: #fff; border-bottom: 1px solid #e7e8ea;
+}
+.brand { font-weight: 700; }
+.user { font-size: 0.875rem; color: #5a606b; }
+.chat { max-width: 640px; margin: 1.5rem auto; padding: 0 1rem; }
+.hint { color: #5a606b; font-size: 0.9rem; }
+.thread {
+  min-height: 240px; max-height: 60vh; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 0.75rem;
+  padding: 1rem; background: #fff; border: 1px solid #e7e8ea; border-radius: 12px;
+}
+.karta-turn { display: flex; flex-direction: column; gap: 0.25rem; }
+.karta-turn--user { align-items: flex-end; }
+.karta-name { font-size: 0.7rem; color: #696e77; text-transform: uppercase; letter-spacing: 0.06em; }
+.karta-msg {
+  padding: 0.5rem 0.75rem; border-radius: 12px; max-width: 85%;
+  line-height: 1.5; white-space: pre-wrap; word-break: break-word;
+}
+.karta-msg--user { background: #16181d; color: #fff; }
+.karta-msg--agent { background: #eef0f3; }
+.karta-msg--agent.is-error { color: #cf4e1f; }
+.karta-msg a { color: #5f7320; }
+.karta-escalate { font-size: 0.85rem; }
+.composer { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+.composer textarea {
+  flex: 1; resize: none; padding: 0.6rem 0.75rem; font: inherit;
+  border: 1px solid #e7e8ea; border-radius: 10px;
+}
+.composer button {
+  border: 0; padding: 0.6rem 1rem; font-weight: 600; cursor: pointer;
+  color: #16181d; background: #c6f135; border-radius: 10px;
+}

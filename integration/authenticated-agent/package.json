@@ -1,0 +1,10 @@
+{
+  "name": "karta-example-authenticated-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Per-user agent with a verified, host-vouched identity (HMAC).",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
