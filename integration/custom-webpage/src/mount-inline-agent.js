@@ -139,10 +139,42 @@ export function mountInlineAgent(options) {
     clearInput();
     renderUser(text, outputEl);
     const reply = createReply(outputEl, agentName);
+
+    // Cold-start statuses. An idle agent is asleep, so the first turn wakes its
+    // private computer (a few seconds). The server emits `warming` events while
+    // it boots; we rotate a friendly status every couple of seconds so the wait
+    // never reads as a stall. The first real `message` clears the timer and
+    // replaces the text with the reply.
+    const warmingSteps = [
+      "Getting ready…",
+      "Waking up the agent…",
+      "Still working…",
+      "Almost there…",
+    ];
+    let warmTimer = null;
+    const stopWarming = () => {
+      if (warmTimer) {
+        clearInterval(warmTimer);
+        warmTimer = null;
+      }
+    };
+    const startWarming = () => {
+      if (warmTimer) return; // idempotent — repeated warming events don't restart it
+      let i = 0;
+      reply.setText(warmingSteps[0]);
+      warmTimer = setInterval(() => {
+        i = Math.min(i + 1, warmingSteps.length - 1); // advance, then hold on the last
+        reply.setText(warmingSteps[i]);
+      }, 2500);
+    };
+
     try {
       let gotText = false;
       for await (const ev of client.sendMessage(text)) {
-        if (ev.type === "message") {
+        if (ev.type === "warming") {
+          startWarming(); // rotates until the first real token arrives
+        } else if (ev.type === "message") {
+          stopWarming();
           gotText = true;
           reply.setText(ev.text || ""); // REPLACE, not append
         } else if (ev.type === "error") {
@@ -150,7 +182,7 @@ export function mountInlineAgent(options) {
           appendEscalation(reply);
           return;
         }
-        // status / thinking / tool_use / tool_result / input_required / done:
+        // thinking / tool_use / tool_result / input_required / done:
         // intentionally ignored — this is a text-only surface.
       }
       if (!gotText) reply.setText("…");
@@ -158,6 +190,7 @@ export function mountInlineAgent(options) {
       reply.setError((err && err.message) || "Couldn't reach the agent.");
       appendEscalation(reply);
     } finally {
+      stopWarming();
       setBusy(false);
       if (typeof inputEl.focus === "function") inputEl.focus();
     }

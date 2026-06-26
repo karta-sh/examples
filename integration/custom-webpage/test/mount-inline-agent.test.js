@@ -6,7 +6,7 @@
 // drives the host's DOM: REPLACE-streamed text, text-only rendering, busy
 // gating, error + escalation, and host render-hook overrides.
 
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mountInlineAgent } from "../src/mount-inline-agent.js";
 
 // A fake KartaAgentClient: sendMessage() returns an async generator over a
@@ -290,6 +290,49 @@ describe("mountInlineAgent", () => {
     expect(captured.contextFn).toBe(contextFn);
     // Anonymous fields are still passed through untouched.
     expect(captured.agentRef).toBe("org/agent");
+  });
+
+  it("rotates a friendly status while the agent warms, then the reply replaces it", async () => {
+    // Cold start: the server emits `warming` while it wakes the agent's microVM.
+    // The module must rotate a status every ~2.5s so the wait doesn't read as a
+    // stall, then drop it the instant the real reply streams in.
+    vi.useFakeTimers();
+    try {
+      let release;
+      const gate = new Promise((r) => (release = r));
+      const els = dom();
+      const client = {
+        sendMessage() {
+          return (async function* () {
+            yield { type: "warming" };
+            await gate; // hold the stream open so the warming timer can rotate
+            yield { type: "message", text: "Hello there" };
+            yield { type: "done" };
+          })();
+        },
+      };
+      const agent = mountInlineAgent({ input: "#in", output: "#out", createClient: () => client });
+      const text = () => els.output.querySelector(".karta-msg--agent").textContent;
+
+      const p = agent.send("hi");
+      await vi.advanceTimersByTimeAsync(0); // process the first warming event
+      expect(text()).toBe("Getting ready…");
+      await vi.advanceTimersByTimeAsync(2500);
+      expect(text()).toBe("Waking up the agent…");
+      await vi.advanceTimersByTimeAsync(2500);
+      expect(text()).toBe("Still working…");
+
+      release();
+      await vi.advanceTimersByTimeAsync(0);
+      await p;
+      expect(text()).toBe("Hello there"); // warming replaced by the reply
+
+      // The rotation timer was cleared — no late tick overwrites the reply.
+      await vi.advanceTimersByTimeAsync(10000);
+      expect(text()).toBe("Hello there");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("destroy() detaches listeners and shuts the client down", async () => {
