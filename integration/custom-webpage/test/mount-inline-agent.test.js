@@ -313,10 +313,12 @@ describe("mountInlineAgent", () => {
       };
       const agent = mountInlineAgent({ input: "#in", output: "#out", createClient: () => client });
       const text = () => els.output.querySelector(".karta-msg--agent").textContent;
+      const dots = () => els.output.querySelector(".karta-typing");
 
       const p = agent.send("hi");
       await vi.advanceTimersByTimeAsync(0); // process the first warming event
       expect(text()).toBe("Getting ready…");
+      expect(dots()).not.toBeNull(); // the wait indicator stays — we're still warming
       await vi.advanceTimersByTimeAsync(2500);
       expect(text()).toBe("Waking up the agent…");
       await vi.advanceTimersByTimeAsync(2500);
@@ -326,6 +328,7 @@ describe("mountInlineAgent", () => {
       await vi.advanceTimersByTimeAsync(0);
       await p;
       expect(text()).toBe("Hello there"); // warming replaced by the reply
+      expect(dots()).toBeNull(); // dots cleared once the real reply renders
 
       // The rotation timer was cleared — no late tick overwrites the reply.
       await vi.advanceTimersByTimeAsync(10000);

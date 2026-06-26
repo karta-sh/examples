@@ -51,6 +51,7 @@ export { renderMarkdown };
  * @typedef {Object} ReplyHandle
  * @property {Element} element            The reply container (escalation link is appended here).
  * @property {(text:string) => void} setText   Replace the reply text (REPLACE semantics).
+ * @property {(text:string) => void} [setStatus]  Optional: a transient status (e.g. cold-start "warming") that keeps a wait indicator below the text; falls back to setText.
  * @property {(msg:string) => void} setError   Show an error in the reply.
  */
 
@@ -152,6 +153,9 @@ export function mountInlineAgent(options) {
       "Almost there…",
     ];
     let warmTimer = null;
+    // Show the warming status WITH the wait indicator kept: the host's setStatus
+    // renders the text + its typing dots; fall back to plain setText otherwise.
+    const showStatus = (t) => (reply.setStatus ? reply.setStatus(t) : reply.setText(t));
     const stopWarming = () => {
       if (warmTimer) {
         clearInterval(warmTimer);
@@ -161,10 +165,10 @@ export function mountInlineAgent(options) {
     const startWarming = () => {
       if (warmTimer) return; // idempotent — repeated warming events don't restart it
       let i = 0;
-      reply.setText(warmingSteps[0]);
+      showStatus(warmingSteps[0]);
       warmTimer = setInterval(() => {
         i = Math.min(i + 1, warmingSteps.length - 1); // advance, then hold on the last
-        reply.setText(warmingSteps[i]);
+        showStatus(warmingSteps[i]);
       }, 2500);
     };
 
@@ -256,6 +260,17 @@ function defaultCreateReply(outputEl, agentName) {
     setText(t) {
       body.classList.remove("is-error");
       body.innerHTML = renderMarkdown(t); // REPLACE; renderMarkdown is the XSS boundary
+      scrollToEnd(outputEl);
+    },
+    setStatus(t) {
+      // Transient status (cold-start warming): keep the typing dots below the
+      // text — we're still waiting. setText replaces it all with the real reply.
+      body.classList.remove("is-error");
+      body.innerHTML =
+        '<span class="karta-typing" aria-label="working"><span></span><span></span><span></span></span>';
+      const line = document.createElement("div");
+      line.textContent = t; // safe
+      body.insertBefore(line, body.firstChild);
       scrollToEnd(outputEl);
     },
     setError(msg) {

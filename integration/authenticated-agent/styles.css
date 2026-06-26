@@ -42,3 +42,13 @@ body {
   border: 0; padding: 0.6rem 1rem; font-weight: 600; cursor: pointer;
   color: #16181d; background: #c6f135; border-radius: 10px;
 }
+/* Cold-start "warming" wait indicator (the agent's microVM is booting). The
+   mount module's setStatus renders these dots below the status text. */
+.karta-typing { display: inline-flex; gap: 4px; padding-top: 4px; vertical-align: middle; }
+.karta-typing span {
+  width: 6px; height: 6px; border-radius: 999px; background: #9aa0aa;
+  animation: karta-blink 1.2s infinite both;
+}
+.karta-typing span:nth-child(2) { animation-delay: 0.2s; }
+.karta-typing span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes karta-blink { 0%, 80%, 100% { opacity: 0.25; } 40% { opacity: 1; } }
