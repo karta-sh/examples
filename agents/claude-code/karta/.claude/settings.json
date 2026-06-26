@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "WebFetch(domain:karta.sh)",
-      "WebFetch(domain:docs.karta.sh)",
-      "mcp__account__get_account"
-    ]
-  }
-}

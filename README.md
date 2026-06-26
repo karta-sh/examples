@@ -16,7 +16,6 @@ Scaffolding. Examples are landing incrementally per [RFC 0020](https://github.co
 | You want to... | Example | Identity |
 | --- | --- | --- |
 | Ship your first agent in 60 seconds | `apps/claude-code/hello-world` | n/a |
-| See a real production agent (Karta's own support bot) | `apps/claude-code/karta` | n/a |
 | Add chat to a site with one `<script>` tag, themed to match | `integration/themed-widget` | anonymous |
 | Build your own chat UI on the agent endpoint | `integration/headless-client` | anonymous / soft |
 | Give logged-in users durable per-user history and memory | `integration/authenticated-memory` | verified |
