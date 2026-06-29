@@ -73,7 +73,7 @@ function json(res, status, body) {
 }
 
 server.listen(PORT, () => {
-  console.log(`authenticated-agent demo → http://localhost:${PORT}`);
+  console.log(`verified-identity-inline demo → http://localhost:${PORT}`);
   if (!KARTA_IDENTITY_SECRET) {
     console.log("⚠  KARTA_IDENTITY_SECRET is not set — the agent will run anonymous. See the README.");
   }

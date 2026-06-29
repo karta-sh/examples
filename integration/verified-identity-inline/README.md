@@ -1,4 +1,4 @@
-# Authenticated agent (on behalf of your signed-in user)
+# Verified identity inline agent
 
 Give every **logged-in** user their own agent that knows it's *them* — a verified
 identity, a private durable memory, and answers (and, with an MCP, actions)
@@ -57,7 +57,7 @@ never as that user.
    Add `http://localhost:8787` to the key's **Allowed origins** so the mint isn't
    origin-rejected.
 
-Open the page: you're "signed in as Nina", and the agent's replies are for *her*.
+Open the page: you're "signed in as Nina", and the agent's replies are for her.
 Reload and it still knows her — the durable workspace is keyed on the verified id.
 
 ## Make it real

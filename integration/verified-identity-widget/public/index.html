@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Authenticated Karta widget example</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7f1;
+      --panel: #ffffff;
+      --ink: #1e2218;
+      --muted: #66705a;
+      --line: #dce2d2;
+      --brand: #5f7320;
+      --brand-ink: #ffffff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      display: grid;
+      place-items: center;
+      padding: 32px;
+    }
+
+    main {
+      width: min(760px, 100%);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 28px;
+      box-shadow: 0 20px 50px rgba(28, 38, 20, 0.12);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      line-height: 1.1;
+    }
+
+    p {
+      margin: 0 0 18px;
+      line-height: 1.55;
+      color: var(--muted);
+    }
+
+    dl {
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      gap: 10px 16px;
+      margin: 22px 0;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcf8;
+    }
+
+    dt {
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    dd {
+      margin: 0;
+      color: var(--muted);
+      overflow-wrap: anywhere;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    button {
+      border: 0;
+      border-radius: 6px;
+      padding: 10px 14px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      background: var(--brand);
+      color: var(--brand-ink);
+    }
+
+    button.secondary {
+      background: #e8eddb;
+      color: var(--ink);
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: wait;
+    }
+
+    #status {
+      min-height: 24px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Authenticated Karta widget</h1>
+    <p>
+      This page simulates a signed-in product. The server signs the current
+      user id, the browser calls <code>karta("identify", ...)</code>, and the
+      widget mints a verified session token without exposing any API key or
+      identity secret.
+    </p>
+
+    <dl>
+      <dt>User</dt>
+      <dd id="user">Loading...</dd>
+      <dt>Agent</dt>
+      <dd id="agent"></dd>
+      <dt>Base URL</dt>
+      <dd id="base"></dd>
+      <dt>Identity</dt>
+      <dd id="identity">Waiting for server signature</dd>
+    </dl>
+
+    <div class="actions">
+      <button id="open" disabled>Open widget</button>
+      <button id="step-up" class="secondary" disabled>Simulate step-up</button>
+      <span id="status" role="status" aria-live="polite"></span>
+    </div>
+  </main>
+
+  <script>
+    window.karta = window.karta || function () {
+      (window.karta.q = window.karta.q || []).push(arguments);
+    };
+
+    const config = {
+      baseUrl: __KARTA_BASE_URL__,
+      agentRef: __KARTA_AGENT_REF__,
+      embedKey: __KARTA_EMBED_KEY__,
+      widgetSrc: __KARTA_WIDGET_SRC__,
+    };
+
+    const userEl = document.querySelector("#user");
+    const agentEl = document.querySelector("#agent");
+    const baseEl = document.querySelector("#base");
+    const identityEl = document.querySelector("#identity");
+    const statusEl = document.querySelector("#status");
+    const openButton = document.querySelector("#open");
+    const stepUpButton = document.querySelector("#step-up");
+
+    agentEl.textContent = config.agentRef;
+    baseEl.textContent = config.baseUrl;
+
+    karta("init", {
+      baseUrl: config.baseUrl,
+      agentRef: config.agentRef,
+      embedKey: config.embedKey,
+      theme: {
+        agentName: "Authenticated assistant",
+        greeting: "Hi. I know who you are because your app signed your identity.",
+        suggestedPrompts: ["What can you see about my account?", "What actions require verification?"],
+        accent: "#5f7320",
+      },
+    });
+
+    openButton.addEventListener("click", () => karta("open"));
+    stepUpButton.addEventListener("click", async () => {
+      setBusy(true, "Completing step-up...");
+      try {
+        const identity = await fetchJson("/api/karta-step-up", { method: "POST" });
+        karta("identify", identity);
+        renderIdentity(identity, "Step-up signed");
+        statusEl.textContent = "Step-up token installed. The next widget request uses the refreshed session token.";
+      } catch (error) {
+        statusEl.textContent = error.message;
+      } finally {
+        setBusy(false);
+      }
+    });
+
+    boot();
+
+    async function boot() {
+      setBusy(true, "Fetching signed identity...");
+      try {
+        const identity = await fetchJson("/api/karta-identity");
+        karta("identify", identity);
+        renderIdentity(identity, "Verified");
+        loadWidget();
+        openButton.disabled = false;
+        stepUpButton.disabled = false;
+        statusEl.textContent = "Ready.";
+      } catch (error) {
+        statusEl.textContent = error.message;
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    function loadWidget() {
+      const script = document.createElement("script");
+      script.async = true;
+      script.src = config.widgetSrc;
+      document.head.appendChild(script);
+    }
+
+    async function fetchJson(url, options) {
+      const response = await fetch(url, {
+        credentials: "include",
+        headers: { "Accept": "application/json" },
+        ...options,
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.error || `Request failed (${response.status})`);
+      return body;
+    }
+
+    function renderIdentity(identity, label) {
+      userEl.textContent = `${identity.userId} (${identity.attributes?.email || "no email"})`;
+      identityEl.textContent = `${label}: ${identity.identityToken.slice(0, 18)}...`;
+    }
+
+    function setBusy(busy, message) {
+      openButton.disabled = busy || identityEl.textContent === "Waiting for server signature";
+      stepUpButton.disabled = busy || identityEl.textContent === "Waiting for server signature";
+      if (message) statusEl.textContent = message;
+    }
+  </script>
+</body>
+</html>

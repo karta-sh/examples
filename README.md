@@ -19,7 +19,8 @@ Scaffolding. Examples are landing incrementally per [RFC 0020](https://github.co
 | Add chat to a site with one `<script>` tag, themed to match | `integration/themed-widget` | anonymous |
 | Build your own chat UI on the agent endpoint | `integration/headless-client` | anonymous / soft |
 | Stream an agent into your page's own textbox + content area | `integration/custom-webpage` | anonymous |
-| Give every logged-in user their own agent that knows it's *them* | `integration/authenticated-agent` | verified |
+| Give every logged-in user their own agent inside your custom DOM | `integration/verified-identity-inline` | verified |
+| Embed the hosted widget for signed-in users, including step-up refresh | `integration/verified-identity-widget` | verified + step-up |
 
 ## Secrets
 
