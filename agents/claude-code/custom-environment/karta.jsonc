@@ -1,0 +1,7 @@
+{
+  // This demo runs a shell command (cowsay) with no human on the other end, so it
+  // runs tools without prompting. The per-user microVM sandbox is the boundary.
+  "runtime": {
+    "permission_mode": "autonomous"
+  }
+}
