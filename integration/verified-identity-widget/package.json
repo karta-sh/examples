@@ -1,0 +1,10 @@
+{
+  "name": "karta-example-verified-identity-widget",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
