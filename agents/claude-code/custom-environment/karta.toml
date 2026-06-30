@@ -1,0 +1,14 @@
+# Custom environment example: install a dependency before the agent runs, then use it.
+# Docs: https://docs.karta.sh/build/karta-toml
+
+name = "custom-environment"
+deploy = true
+
+[harness]
+type = "claude-code"
+
+# Karta runs setup.sh once when this agent's workspace is first prepared, before its
+# first turn. Installs land in the agent's home, so they persist with the workspace and
+# are available on every turn. (Karta routes `pip` / `npm` installs to the home for you.)
+[environment]
+setup = "setup.sh"

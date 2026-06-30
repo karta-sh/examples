@@ -16,6 +16,7 @@ Scaffolding. Examples are landing incrementally per [RFC 0020](https://github.co
 | You want to... | Example | Identity |
 | --- | --- | --- |
 | Ship your first agent in 60 seconds | `apps/claude-code/hello-world` | n/a |
+| Install the dependencies (pip/npm) your agent needs before it runs | `agents/claude-code/custom-environment` | n/a |
 | Add chat to a site with one `<script>` tag, themed to match | `integration/themed-widget` | anonymous |
 | Build your own chat UI on the agent endpoint | `integration/headless-client` | anonymous / soft |
 | Stream an agent into your page's own textbox + content area | `integration/custom-webpage` | anonymous |
