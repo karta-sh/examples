@@ -1,0 +1,35 @@
+# --- Identity -------------------------------------------------------------
+# This agent's name, unique within your Karta org. Deploying again with the
+# same name OVERWRITES that agent. Lowercase letters, digits, hyphens.
+name = "hello-world-deepagents"
+
+# Deploy gate. Only agents with deploy = true ship on `karta deploy` /
+# `git push karta`. Absent or false = configured but not deployed.
+deploy = true
+
+# --- Build ----------------------------------------------------------------
+# OMIT this whole section for a harness-only agent (an AGENTS.md / harness
+# folder) - Karta serves it as-is, no build step.
+#   "python" - Python project; Karta builds it (set entry_point below)
+#   "node"   - Node project; Karta builds it
+# buildpack = "python"
+
+# Import path "module:attribute" to your app object. Required ONLY when
+# buildpack is set; omit for harness-only agents.
+# entry_point = "app:app"
+
+# --- Harness (RFC 0035) ---------------------------------------------------
+# The agent runtime this agent runs on. `type` is fixed for the life of the
+# agent (switching harness = a new agent). `version` is optional: a range
+# resolves to the latest matching version Karta supports at deploy time; omit
+# it for the curated default; pin an exact version only when you need
+# determinism (it must be one Karta supports - `karta deploy` checks).
+[harness]
+type = "deepagents"
+version = "0.1"
+
+# --- Environment (declare-or-bind, RFC 0013) ------------------------------
+# Names this agent needs. Bind locally in .env, in prod via `karta env set`.
+# A required var with no prod binding fails the build.
+[env]
+# SUPPORT_DB_URL = { required = false, description = "Support database DSN" }
