@@ -2,7 +2,7 @@
 
 Runnable, copy-pasteable examples for [Karta](https://karta.sh), in two registers:
 
-- **`apps/claude-code/`** - agents you publish on Karta (just a `CLAUDE.md`, deployed with `git push karta main`).
+- **`agents/claude-code/`** - agents you publish on Karta (just a `CLAUDE.md`, deployed with `git push karta main`).
 - **`integration/`** - Karta agents you embed in your own product (the widget, the headless client, and per-user history with verified identity).
 
 Every example runs against the **public product only** (`cdn.karta.sh`, `agent.karta.sh`, and the published npm SDKs). None of them reference an internal service, so each one breaks only in ways a customer would also hit - and each one runs on a plain `git clone`.
@@ -15,7 +15,7 @@ Scaffolding. Examples are landing incrementally per [RFC 0020](https://github.co
 
 | You want to... | Example | Identity |
 | --- | --- | --- |
-| Ship your first agent in 60 seconds | `apps/claude-code/hello-world` | n/a |
+| Ship your first agent in 60 seconds | `agents/claude-code/hello-world` | n/a |
 | Install the dependencies (pip/npm) your agent needs before it runs | `agents/claude-code/custom-environment` | n/a |
 | Add chat to a site with one `<script>` tag, themed to match | `integration/themed-widget` | anonymous |
 | Build your own chat UI on the agent endpoint | `integration/headless-client` | anonymous / soft |
