@@ -1,0 +1,34 @@
+# --- Identity -------------------------------------------------------------
+name = "genui-concierge-claude-code"
+
+# Deploy gate. Only agents with deploy = true ship on `karta deploy`.
+deploy = true
+
+# --- Harness (RFC 0035) ---------------------------------------------------
+[harness]
+type = "claude-code"
+
+# --- Generative UI (RFC 0056) ---------------------------------------------
+# Opting in here injects the generative-ui skill into this agent's harness and
+# tells Karta which catalog + components the agent may render.
+#
+#   catalog_id  - the component set this agent draws from. "sh.karta/basic" is
+#                 the built-in Tier-1 shadcn set (host-rendered, always safe).
+#   bundle      - the built component bundle for your CUSTOM (Tier 2/3)
+#                 components. Required once any component is tier >= 2. The demo
+#                 `pentagraph` (Tier 2) and `canvasApp` (Tier 3) below ship in
+#                 the widget for dogfooding; a real builder points this at their
+#                 own built bundle.
+#   components  - each custom component and its minimum trust tier:
+#                 1 declarative host-rendered, 2 remote-DOM worker, 3 sandboxed
+#                 iframe.
+[genui]
+catalog_id = "sh.karta/basic"
+bundle = "genui/components.js"
+components = [
+  { name = "pentagraph", tier = 2 },
+  { name = "canvasBars", tier = 3 },
+]
+
+# --- Environment (declare-or-bind, RFC 0013) ------------------------------
+[env]

@@ -1,0 +1,25 @@
+# --- Identity -------------------------------------------------------------
+name = "genui-concierge-deepagents"
+
+# Deploy gate. Only agents with deploy = true ship on `karta deploy`.
+deploy = true
+
+# --- Harness (RFC 0035) ---------------------------------------------------
+[harness]
+type = "deepagents"
+version = "0.1"
+
+# --- Generative UI (RFC 0056) ---------------------------------------------
+# Same registration as the claude-code example - the emission skill is injected
+# into the deepagents harness (.deepagents/skills) instead, proving the skill is
+# harness-agnostic (RFC 0056 cross-harness injection).
+[genui]
+catalog_id = "sh.karta/basic"
+bundle = "genui/components.js"
+components = [
+  { name = "pentagraph", tier = 2 },
+  { name = "canvasBars", tier = 3 },
+]
+
+# --- Environment (declare-or-bind, RFC 0013) ------------------------------
+[env]
