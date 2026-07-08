@@ -18,6 +18,7 @@ Scaffolding. Examples are landing incrementally per [RFC 0020](https://github.co
 | Ship your first agent in 60 seconds | `agents/claude-code/hello-world` | n/a |
 | Ship the same hello-world agent on Deep Agents Code | `agents/deepagents/hello-world` | n/a |
 | Ship the same hello-world agent on Goose | `agents/goose/hello-world` | n/a |
+| Ship the same hello-world agent on Codex CLI | `agents/codex-cli/hello-world` | n/a |
 | Install the dependencies (pip/npm) your agent needs before it runs | `agents/claude-code/custom-environment` | n/a |
 | Add chat to a site with one `<script>` tag, themed to match | `integration/themed-widget` | anonymous |
 | Build your own chat UI on the agent endpoint | `integration/headless-client` | anonymous / soft |
