@@ -145,34 +145,58 @@ export function mountInlineAgent(options) {
     const reply = createReply(outputEl, agentName);
 
     // Cold-start statuses. An idle agent is asleep, so the first turn wakes its
-    // private computer (a few seconds). The server emits `warming` events while
-    // it boots; we rotate a friendly status every couple of seconds so the wait
-    // never reads as a stall. The first real `message` clears the timer and
-    // replaces the text with the reply.
+    // private computer (a cold miss is ~15-20s). The server's `warming` signal
+    // is a single opaque event — the microVM boot + image pull expose NO real
+    // progress — so this drip is SIMULATED. To avoid the tells of a fake
+    // progress bar, each line advances on a delay that GROWS (quick early
+    // feedback, then spaced out like real progress) with random jitter, so it
+    // never reads as a metronome; and once the scripted journey is done a small
+    // "still waiting" pool keeps gently cycling so a long boot never freezes on
+    // one line. The first real `message` clears the timer and replaces the text.
     const warmingSteps = [
       "Getting ready…",
-      "Waking up the agent…",
-      "Still working…",
+      "Waking up your agent…",
+      "Spinning up a private microVM…",
+      "Loading your agent…",
       "Almost there…",
     ];
+    const warmingTail = ["Still working…", "Hang tight…", "Almost ready…"];
     let warmTimer = null;
+    let warmStep = 0;
     // Show the warming status WITH the wait indicator kept: the host's setStatus
     // renders the text + its typing dots; fall back to plain setText otherwise.
     const showStatus = (t) => (reply.setStatus ? reply.setStatus(t) : reply.setText(t));
+    // Delay BEFORE the next line: grows with each step (capped), then ±40% jitter
+    // so the cadence never looks mechanical. random==0.5 => exactly the base.
+    const nextWarmDelay = () => {
+      const base = Math.min(3200 + warmStep * 1400, 11000);
+      const jitter = 0.4 * base;
+      return base - jitter + Math.random() * 2 * jitter;
+    };
+    const scheduleWarm = () => {
+      warmTimer = setTimeout(() => {
+        warmStep += 1;
+        if (warmStep < warmingSteps.length) {
+          showStatus(warmingSteps[warmStep]);
+        } else {
+          // Past the scripted journey — cycle gentle "still waiting" lines at
+          // long jittered intervals so a rare slow boot keeps changing.
+          showStatus(warmingTail[(warmStep - warmingSteps.length) % warmingTail.length]);
+        }
+        scheduleWarm();
+      }, nextWarmDelay());
+    };
     const stopWarming = () => {
       if (warmTimer) {
-        clearInterval(warmTimer);
+        clearTimeout(warmTimer);
         warmTimer = null;
       }
     };
     const startWarming = () => {
       if (warmTimer) return; // idempotent — repeated warming events don't restart it
-      let i = 0;
+      warmStep = 0;
       showStatus(warmingSteps[0]);
-      warmTimer = setInterval(() => {
-        i = Math.min(i + 1, warmingSteps.length - 1); // advance, then hold on the last
-        showStatus(warmingSteps[i]);
-      }, 2500);
+      scheduleWarm();
     };
 
     try {

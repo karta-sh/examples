@@ -317,11 +317,14 @@ describe("mountInlineAgent", () => {
     expect(captured.agentRef).toBe("org/agent");
   });
 
-  it("rotates a friendly status while the agent warms, then the reply replaces it", async () => {
-    // Cold start: the server emits `warming` while it wakes the agent's microVM.
-    // The module must rotate a status every ~2.5s so the wait doesn't read as a
-    // stall, then drop it the instant the real reply streams in.
+  it("drips a jittered, growing warming schedule that the reply replaces", async () => {
+    // Cold start (~15-20s) exposes NO real progress events, so the status is
+    // simulated. It must NOT read as a fixed metronome: each line waits LONGER
+    // than the last (plus jitter), and the first real reply drops it. Mock
+    // Math.random to 0.5 so the jittered delay collapses to exactly its base and
+    // the schedule is deterministic.
     vi.useFakeTimers();
+    const rand = vi.spyOn(Math, "random").mockReturnValue(0.5);
     try {
       let release;
       const gate = new Promise((r) => (release = r));
@@ -330,7 +333,7 @@ describe("mountInlineAgent", () => {
         sendMessage() {
           return (async function* () {
             yield { type: "warming" };
-            await gate; // hold the stream open so the warming timer can rotate
+            await gate; // hold the stream open so the warming schedule can advance
             yield { type: "message", text: "Hello there" };
             yield { type: "done" };
           })();
@@ -344,10 +347,16 @@ describe("mountInlineAgent", () => {
       await vi.advanceTimersByTimeAsync(0); // process the first warming event
       expect(text()).toBe("Getting ready…");
       expect(dots()).not.toBeNull(); // the wait indicator stays — we're still warming
-      await vi.advanceTimersByTimeAsync(2500);
-      expect(text()).toBe("Waking up the agent…");
-      await vi.advanceTimersByTimeAsync(2500);
-      expect(text()).toBe("Still working…");
+
+      // First hop after 3200ms (base delay for step 0).
+      await vi.advanceTimersByTimeAsync(3200);
+      expect(text()).toBe("Waking up your agent…");
+
+      // The NEXT hop is LONGER (4600ms base) — proving the cadence grows, not fixed.
+      await vi.advanceTimersByTimeAsync(3200);
+      expect(text()).toBe("Waking up your agent…"); // 3200 < 4600, not yet
+      await vi.advanceTimersByTimeAsync(1400);
+      expect(text()).toBe("Spinning up a private microVM…");
 
       release();
       await vi.advanceTimersByTimeAsync(0);
@@ -355,10 +364,11 @@ describe("mountInlineAgent", () => {
       expect(text()).toBe("Hello there"); // warming replaced by the reply
       expect(dots()).toBeNull(); // dots cleared once the real reply renders
 
-      // The rotation timer was cleared — no late tick overwrites the reply.
-      await vi.advanceTimersByTimeAsync(10000);
+      // The timer was cleared — no late tick overwrites the reply.
+      await vi.advanceTimersByTimeAsync(30000);
       expect(text()).toBe("Hello there");
     } finally {
+      rand.mockRestore();
       vi.useRealTimers();
     }
   });
