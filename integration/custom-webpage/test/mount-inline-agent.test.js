@@ -106,22 +106,47 @@ describe("mountInlineAgent", () => {
     expect(reply.textContent).toContain("<b>x</b>");
   });
 
-  it("ignores thinking and tool events (text-only surface)", async () => {
-    const { els, agent } = mountWith([
-      { type: "thinking", text: "let me think" },
-      { type: "tool_use", tool: "search", input: {} },
-      { type: "message", text: "Answer." },
-      { type: "tool_result", output: "x" },
-      { type: "done" },
-    ]);
+  it("shows a transient working status while the agent thinks/uses tools, then the reply replaces it", async () => {
+    // The bug this guards against: after a tool call the front-door chat showed
+    // dead air, so a working turn read as a hang. The agent's raw reasoning and
+    // tool payloads are still NEVER rendered — but the user must see live
+    // progress (a friendly status + wait indicator) that the final answer
+    // replaces.
+    let release;
+    const gate = new Promise((r) => (release = r));
+    const els = dom();
+    const client = {
+      sendMessage() {
+        return (async function* () {
+          yield { type: "thinking", text: "let me think about privacy" };
+          yield { type: "tool_use", tool: "WebFetch", input: { url: "https://docs.karta.sh/x" } };
+          await gate; // hold the stream open so we can observe the in-flight status
+          yield { type: "message", text: "Answer." };
+          yield { type: "done" };
+        })();
+      },
+    };
+    const agent = mountInlineAgent({ input: "#in", output: "#out", createClient: () => client });
+    const reply = () => els.output.querySelector(".karta-msg--agent");
+    const dots = () => els.output.querySelector(".karta-typing");
 
-    await agent.send("q");
+    const p = agent.send("is it private?");
+    await new Promise((r) => setTimeout(r, 0)); // let the stream run up to the gate
 
-    const reply = els.output.querySelector(".karta-msg--agent");
-    expect(reply.textContent).toBe("Answer.");
-    // No tool/thinking text leaked into the page.
+    // In-flight: a friendly activity label + the wait indicator — never the raw
+    // reasoning or the tool's arguments.
+    expect(reply().textContent).toBe("Searching the docs…");
+    expect(dots()).not.toBeNull();
     expect(els.output.textContent).not.toContain("let me think");
-    expect(els.output.textContent).not.toContain("search");
+    expect(els.output.textContent).not.toContain("docs.karta.sh/x");
+    expect(els.output.textContent).not.toContain("WebFetch");
+
+    release();
+    await p;
+
+    // The final answer replaces the status; the wait indicator is gone.
+    expect(reply().textContent).toBe("Answer.");
+    expect(dots()).toBeNull();
   });
 
   it("surfaces an error event and shows the escalation link", async () => {

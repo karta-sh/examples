@@ -13,10 +13,13 @@
 // page source (the origin allowlist + a per-project credit cap are the gate,
 // not the key).
 //
-// Rendering is text-only by design: a front-door chat shows the agent's words,
-// not its tool calls or reasoning. Agent text uses REPLACE semantics — each
-// `message` event carries the full text-so-far, so we replace the reply rather
-// than append. Agent text is rendered through renderMarkdown — a vendored,
+// The final answer is text-only by design: a front-door chat shows the agent's
+// words, not a log of its tool calls or reasoning. While the turn is in flight
+// we do show a transient, friendly status line (e.g. "Searching the docs…")
+// that keeps a wait indicator, so a real agent turn never reads as a stall; the
+// reply text replaces it as soon as it streams. Agent text uses REPLACE
+// semantics — each `message` event carries the full text-so-far, so we replace
+// the reply rather than append. Agent text is rendered through renderMarkdown — a vendored,
 // escape-first renderer (the XSS boundary: it HTML-escapes the whole string,
 // then injects only a safe tag whitelist; links are scheme-allowlisted to
 // http/https/mailto) — so a reply can show clickable links and emphasis without
@@ -51,7 +54,7 @@ export { renderMarkdown };
  * @typedef {Object} ReplyHandle
  * @property {Element} element            The reply container (escalation link is appended here).
  * @property {(text:string) => void} setText   Replace the reply text (REPLACE semantics).
- * @property {(text:string) => void} [setStatus]  Optional: a transient status (e.g. cold-start "warming") that keeps a wait indicator below the text; falls back to setText.
+ * @property {(text:string) => void} [setStatus]  Optional: a transient progress status (cold-start "warming" or a "what the agent is doing" line) that keeps a wait indicator below the text; falls back to setText.
  * @property {(msg:string) => void} setError   Show an error in the reply.
  */
 
@@ -176,18 +179,30 @@ export function mountInlineAgent(options) {
       let gotText = false;
       for await (const ev of client.sendMessage(text)) {
         if (ev.type === "warming") {
-          startWarming(); // rotates until the first real token arrives
+          startWarming(); // rotates until the agent starts responding
         } else if (ev.type === "message") {
           stopWarming();
           gotText = true;
           reply.setText(ev.text || ""); // REPLACE, not append
+        } else if (
+          ev.type === "thinking" ||
+          ev.type === "tool_use" ||
+          ev.type === "tool_result"
+        ) {
+          // Live progress. A front-door chat still shows the final answer as
+          // words, but while the agent works we surface WHAT it's doing as a
+          // transient status that keeps the wait indicator — so a real agent
+          // turn (reasoning, searching the docs) never reads as a stall. The
+          // next real `message` replaces it. Raw reasoning text and tool
+          // payloads are never rendered, only a friendly activity label.
+          stopWarming();
+          showStatus(activityLabel(ev));
         } else if (ev.type === "error") {
           reply.setError(ev.message || "The agent hit an error.");
           appendEscalation(reply);
           return;
         }
-        // thinking / tool_use / tool_result / input_required / done:
-        // intentionally ignored — this is a text-only surface.
+        // input_required / done / status: nothing to render here.
       }
       if (!gotText) reply.setText("…");
     } catch (err) {
@@ -222,6 +237,27 @@ export function mountInlineAgent(options) {
 }
 
 // --- helpers ----------------------------------------------------------------
+
+// A friendly, ephemeral label for what the agent is doing right now. This is a
+// progress line, not a tool-call log: raw reasoning and tool payloads are never
+// shown. Kept generic (this module can drive any agent); a few well-known tool
+// names get a nicer verb, everything else falls back to a neutral "Working…".
+function activityLabel(ev) {
+  if (ev.type === "thinking" || ev.type === "tool_result") return "Thinking…";
+  switch (ev.tool) {
+    case "WebFetch":
+    case "WebSearch":
+      return "Searching the docs…";
+    case "get_account":
+      return "Checking your account…";
+    case "get_capabilities":
+      return "Checking what's possible…";
+    case "propose_action":
+      return "Preparing that for your approval…";
+    default:
+      return "Working…";
+  }
+}
 
 function resolveEl(ref, label) {
   const el = typeof ref === "string" ? document.querySelector(ref) : ref;
