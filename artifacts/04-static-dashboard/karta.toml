@@ -1,0 +1,18 @@
+name = "artifact-04-static-dashboard"
+deploy = true
+
+[harness]
+type = "codex-cli"
+
+[artifacts]
+manifest = ".karta/artifacts.json"
+
+[artifacts.kinds.static-dashboard]
+renderer = "builtin.html"
+schema_version = 1
+portability = "static"
+allowed_render_paths = ["output/activation-dashboard/**"]
+allowed_evidence_paths = []
+allowed_provenance_paths = []
+allowed_continuation_paths = []
+max_share_bytes = 250000
