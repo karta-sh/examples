@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "sre-tools": {
+      "command": "python3",
+      "args": ["tools/sre_tools.py"]
+    }
+  }
+}

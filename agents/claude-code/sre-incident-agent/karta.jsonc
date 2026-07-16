@@ -1,0 +1,8 @@
+{
+  // This agent investigates on its own — grepping the log and calling read-only
+  // tools with no human approving each step. Run tools without prompting; the
+  // per-user microVM sandbox is the boundary.
+  "runtime": {
+    "permission_mode": "autonomous"
+  }
+}

@@ -1,0 +1,20 @@
+# SRE incident-investigator example: greps a large log and calls custom MCP
+# tools to find the root cause of a production incident.
+# Docs: https://docs.karta.sh/build/karta-toml
+
+name = "sre-incident-agent"
+deploy = true
+
+[harness]
+type = "claude-code"
+
+# The custom tools (tools/sre_tools.py) use FastMCP from the `mcp` package.
+# Karta runs setup.sh once when the workspace is first prepared, before the
+# first turn; the install persists with the workspace. Karta's Claude harness
+# then loads the tools as an MCP server from .mcp.json.
+[environment]
+setup = "setup.sh"
+
+# --- Environment (declare-or-bind, RFC 0013) ------------------------------
+# This example needs no secrets or external services.
+[env]

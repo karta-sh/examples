@@ -1,0 +1,42 @@
+{
+  "now": "2026-05-19T14:50:00Z",
+  "window_hours": 6,
+  "deploys": [
+    {
+      "commit": "a3f9c21",
+      "service": "checkout",
+      "author": "priya.nair",
+      "message": "checkout: fetch line items per row instead of one batched query",
+      "deployed_at": "2026-05-19T14:31:18Z",
+      "pipeline": "checkout-prod-deploy",
+      "status": "succeeded"
+    },
+    {
+      "commit": "b1c4e08",
+      "service": "cart",
+      "author": "marco.silva",
+      "message": "cart: bump libsass, no runtime change",
+      "deployed_at": "2026-05-19T13:02:44Z",
+      "pipeline": "cart-prod-deploy",
+      "status": "succeeded"
+    },
+    {
+      "commit": "7d2aa5f",
+      "service": "payments",
+      "author": "dana.wu",
+      "message": "payments: add retry budget metric",
+      "deployed_at": "2026-05-19T11:40:09Z",
+      "pipeline": "payments-prod-deploy",
+      "status": "succeeded"
+    },
+    {
+      "commit": "e90f13a",
+      "service": "checkout",
+      "author": "priya.nair",
+      "message": "checkout: tidy logging fields",
+      "deployed_at": "2026-05-19T09:18:52Z",
+      "pipeline": "checkout-prod-deploy",
+      "status": "succeeded"
+    }
+  ]
+}
