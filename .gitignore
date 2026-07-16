@@ -6,3 +6,6 @@ dist/
 **/config.js
 .DS_Store
 .serena
+__pycache__/
+*.pyc
+.venv/

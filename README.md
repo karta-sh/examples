@@ -22,6 +22,7 @@ Scaffolding. Examples are landing incrementally per [RFC 0020](https://github.co
 | Ship the same hello-world agent on Codex CLI | `agents/codex-cli/hello-world` | n/a |
 | Learn the Artifact flow with one Markdown file | `artifacts/01-hello-world-markdown` | n/a |
 | Install the dependencies (pip/npm) your agent needs before it runs | `agents/claude-code/custom-environment` | n/a |
+| Give an agent custom tools (MCP) and a workspace of data to investigate | `agents/claude-code/sre-incident-agent` | n/a |
 | Add chat to a site with one `<script>` tag, themed to match | `integration/themed-widget` | anonymous |
 | Build your own chat UI on the agent endpoint | `integration/headless-client` | anonymous / soft |
 | Stream an agent into your page's own textbox + content area | `integration/custom-webpage` | anonymous |

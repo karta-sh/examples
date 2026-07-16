@@ -1,0 +1,43 @@
+commit a3f9c21 (checkout)
+Author: priya.nair <priya.nair@example.com>
+Date:   2026-05-19 14:29:41 UTC
+Deployed: 2026-05-19 14:31:18 UTC
+
+    checkout: fetch line items per row instead of one batched query
+
+    Refactors OrderAssembler to read each line item's product row on demand.
+    Simplifies the call site, but drops the batched IN (...) lookup.
+
+--- a/services/checkout/order_assembler.py
++++ b/services/checkout/order_assembler.py
+@@ -18,23 +18,19 @@ class OrderAssembler:
+     def assemble(self, cart):
+         line_items = cart.line_items
+-        # Batched: one query pulls every product row for the cart.
+-        product_ids = [li.product_id for li in line_items]
+-        rows = self.db.query(
+-            "SELECT id, name, price_cents, tax_class "
+-            "FROM products WHERE id = ANY(%s)",
+-            (product_ids,),
+-        )
+-        products = {r["id"]: r for r in rows}
+-
+         assembled = []
+         for li in line_items:
+-            product = products[li.product_id]
++            # Per-row: hit the DB once for every single line item.
++            product = self.db.query(
++                "SELECT id, name, price_cents, tax_class "
++                "FROM products WHERE id = %s",
++                (li.product_id,),
++            )[0]
+             assembled.append(
+                 LineItem(
+                     product_id=product["id"],
+                     name=product["name"],
+                     price_cents=product["price_cents"],
+                     tax_class=product["tax_class"],
+                     qty=li.qty,
+                 )
+             )
+         return Order(items=assembled, currency=cart.currency)
