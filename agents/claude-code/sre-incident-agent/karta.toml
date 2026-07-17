@@ -8,12 +8,9 @@ deploy = true
 [harness]
 type = "claude-code"
 
-# The custom tools (tools/sre_tools.py) use FastMCP from the `mcp` package.
-# Karta runs setup.sh once when the workspace is first prepared, before the
-# first turn; the install persists with the workspace. Karta's Claude harness
-# then loads the tools as an MCP server from .mcp.json.
-[environment]
-setup = "setup.sh"
+# The custom tools are a zero-dependency MCP server (tools/sre_tools.py) that
+# Karta's Claude harness loads from .mcp.json — no build step, no setup script,
+# and no packages to install (it uses only the Python standard library).
 
 # --- Environment (declare-or-bind, RFC 0013) ------------------------------
 # This example needs no secrets or external services.
