@@ -139,6 +139,28 @@ export function mountInlineAgent(options) {
   }
 
   /**
+   * A visitor-safe error string. A turn that fails inside Karta's model gateway
+   * surfaces internal plumbing (a loopback URL like
+   * `http://127.0.0.1:36021/v1/chat/completions`, or `provider HTTP 403`) that
+   * is noise — or an info leak — to a visitor and gives them nothing to act on.
+   * Collapse that class to a calm, retryable line; a genuinely user-facing
+   * message (e.g. "sending too fast") passes through unchanged.
+   * @param {string=} message
+   * @param {string} fallback
+   * @returns {string}
+   */
+  function friendlyAgentError(message, fallback) {
+    const raw = (message == null ? "" : String(message)).trim();
+    if (!raw) return fallback;
+    const internal =
+      /127\.0\.0\.1|localhost|:\d{4,5}\b|Bad Gateway|upstream model provider|provider HTTP|\/v1\/(chat\/completions|messages|responses)|model_provider_/i;
+    if (internal.test(raw)) {
+      return "The assistant is temporarily unavailable. Please try again in a moment.";
+    }
+    return raw;
+  }
+
+  /**
    * Send one user turn and stream the reply into the page.
    * @param {string} text
    */
@@ -183,13 +205,28 @@ export function mountInlineAgent(options) {
 
     try {
       let gotText = false;
+      // Accumulate streamed text by part. A `message` flagged `delta` is
+      // INCREMENTAL (the OpenAI-compatible streaming contract, e.g. the goose
+      // harness — each event carries only the new tokens), so APPEND it;
+      // replacing the bubble with each chunk would show only the last token. An
+      // unflagged `message` is a full-message-so-far snapshot, so REPLACE that
+      // part. The bubble renders the parts joined in order.
+      const textByPart = new Map();
+      const textPartOrder = [];
+      const accumulateText = (partId, incoming, isDelta) => {
+        const id = partId || "text";
+        if (!textByPart.has(id)) textPartOrder.push(id);
+        const prev = textByPart.get(id) || "";
+        textByPart.set(id, isDelta ? prev + incoming : incoming);
+        return textPartOrder.map((pid) => textByPart.get(pid)).join("");
+      };
       for await (const ev of client.sendMessage(text)) {
         if (ev.type === "warming") {
           startWarming(); // rotates until the agent starts responding
         } else if (ev.type === "message") {
           stopWarming();
           gotText = true;
-          reply.setText(ev.text || ""); // REPLACE, not append
+          reply.setText(accumulateText(ev.partId, ev.text || "", ev.delta === true));
         } else if (
           ev.type === "thinking" ||
           ev.type === "tool_use" ||
@@ -204,7 +241,7 @@ export function mountInlineAgent(options) {
           stopWarming();
           showStatus(activityLabel(ev));
         } else if (ev.type === "error") {
-          reply.setError(ev.message || "The agent hit an error.");
+          reply.setError(friendlyAgentError(ev.message, "The agent hit an error."));
           appendEscalation(reply);
           return;
         }
@@ -212,7 +249,7 @@ export function mountInlineAgent(options) {
       }
       if (!gotText) reply.setText("…");
     } catch (err) {
-      reply.setError((err && err.message) || "Couldn't reach the agent.");
+      reply.setError(friendlyAgentError(err && err.message, "Couldn't reach the agent."));
       appendEscalation(reply);
     } finally {
       stopWarming();

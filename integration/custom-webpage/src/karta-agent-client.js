@@ -528,9 +528,9 @@ function mapWireEvent(wire) {
     case "session.status_running":
       return { type: "status", status: "running", seq };
     case "agent.message":
-      return { type: "message", text: wire.text ?? "", partId: wire.part_id, seq };
+      return { type: "message", text: wire.text ?? "", partId: wire.part_id, delta: wire.delta === true, seq };
     case "agent.thinking":
-      return { type: "thinking", text: wire.text ?? "", partId: wire.part_id, seq };
+      return { type: "thinking", text: wire.text ?? "", partId: wire.part_id, delta: wire.delta === true, seq };
     case "agent.tool_use":
       return { type: "tool_use", toolUseId: wire.tool_use_id, tool: wire.tool, input: wire.input, seq };
     case "agent.tool_result":
