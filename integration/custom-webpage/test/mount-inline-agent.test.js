@@ -120,6 +120,43 @@ describe("mountInlineAgent", () => {
     expect(reply.classList.contains("is-error")).toBe(false);
   });
 
+  it("APPENDs delta-flagged chunks into one growing reply (OpenAI-compatible)", async () => {
+    // A harness that streams incremental deltas (goose) flags each chunk; the
+    // host must concatenate by partId, not replace the bubble with each token.
+    const { els, agent } = mountWith([
+      { type: "status", status: "running" },
+      { type: "message", text: "Hel", partId: "p0", delta: true },
+      { type: "message", text: "lo", partId: "p0", delta: true },
+      { type: "message", text: " there", partId: "p0", delta: true },
+      { type: "done" },
+    ]);
+
+    await agent.send("hi");
+
+    const reply = els.output.querySelector(".karta-turn--agent .karta-msg--agent");
+    expect(reply.textContent).toBe("Hello there");
+  });
+
+  it("hides raw internal infrastructure errors from visitors", async () => {
+    // A model-gateway failure surfaces loopback plumbing; a visitor must see a
+    // calm, retryable line instead of `http://127.0.0.1:...` / `provider HTTP 403`.
+    const { els, agent } = mountWith([
+      {
+        type: "error",
+        message:
+          "Server error (502 Bad Gateway) at http://127.0.0.1:36021/v1/chat/completions: upstream model provider rejected authentication (provider HTTP 403).",
+      },
+    ]);
+
+    await agent.send("q");
+
+    const reply = els.output.querySelector(".karta-msg--agent");
+    expect(reply.classList.contains("is-error")).toBe(true);
+    expect(reply.textContent).toContain("temporarily unavailable");
+    expect(reply.textContent).not.toContain("127.0.0.1");
+    expect(reply.textContent).not.toContain("provider HTTP");
+  });
+
   it("renders agent markdown safely (links clickable, raw HTML escaped)", async () => {
     const { els, agent } = mountWith([
       { type: "message", text: "See the [docs](https://docs.karta.sh) and `git push`. <b>x</b>" },

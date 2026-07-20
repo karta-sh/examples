@@ -37,9 +37,11 @@ const agent = mountInlineAgent({
 agent.send("How do I deploy an agent?");
 ```
 
-It renders **text only** (a front-door chat shows words, not tool calls), uses
-**REPLACE** semantics for streamed text (each `message` event is the full
-text-so-far), and renders agent text through the widget's escape-first
+It renders **text only** (a front-door chat shows words, not tool calls) and
+accumulates streamed text **per `partId`**: a `message` flagged `delta` is an
+incremental chunk to **append** (the OpenAI-compatible streaming contract, e.g.
+the goose harness), while an unflagged `message` is the full text-so-far and
+**replaces** its part. It renders agent text through the widget's escape-first
 `renderMarkdown` (HTML-escaped first, then only a safe tag whitelist; links are
 scheme-allowlisted) - so doc links render clickable without a reply being able to
 inject markup into your page.
