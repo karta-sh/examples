@@ -324,6 +324,10 @@ export function mountInlineAgent(options) {
 
   return {
     send,
+    // Exposed so a host can drive session continuity (resume the visitor's
+    // latest conversation via client.listSessions/openSession) without the
+    // module owning that policy.
+    client,
     destroy() {
       teardown.forEach((fn) => fn());
       if (typeof client.shutdown === "function") client.shutdown();

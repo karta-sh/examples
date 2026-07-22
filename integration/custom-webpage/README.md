@@ -35,6 +35,11 @@ const agent = mountInlineAgent({
 
 // Optional: make suggestion chips send real turns.
 agent.send("How do I deploy an agent?");
+
+// Optional: the underlying client is exposed so the page can drive session
+// continuity itself — e.g. list the visitor's past conversations and replay
+// the newest one on load.
+// agent.client.listSessions() / agent.client.openSession(id)
 ```
 
 It renders **text only** (a front-door chat shows words, not tool calls) and
